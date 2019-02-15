@@ -5,14 +5,31 @@
 ;; -------------------------
 ;; Views
 
-(defn home-page []
-  [:div [:h2 "Welcome to Reagent"]])
+(defn Header []
+  [:div.Header
+   [:img.Header-logo {:src "/dice.svg"}]
+   [:div.Header-title "Randomish"]])
+
+(defn Section [title & children]
+  [:div.Section
+   [:div.Section-title title]
+   [:div.Section-content children]])
+
+(defn Strings []
+  [Section "Strings"
+    [:h4 "TODO"]])
+
+(defn RootPage []
+  [:div.Randomish
+    [Header]
+    [:div.Randomish-sections
+     [Strings]]])
 
 ;; -------------------------
 ;; Initialize app
 
 (defn mount-root []
-  (r/render [home-page] (.getElementById js/document "app")))
+  (r/render [RootPage] (.getElementById js/document "app")))
 
 (defn init! []
   (mount-root))
