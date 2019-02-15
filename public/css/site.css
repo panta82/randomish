@@ -4,6 +4,9 @@
 	--background: #121a1b;
 	--foreground: #e4fff8;
 	--primary: #90e2c9;
+	--highlight: #9e3e04;
+
+	--monospace: "Droid Sans Mono", "Lucida Console", Monaco, monospace;
 }
 
 * {
@@ -33,6 +36,10 @@ body {
 	top: 5px;
 	width: 80px;
 	left: 10px;
+	transition: all 0.3s;
+}
+.Header-logo:hover {
+	filter: invert(0.5) sepia(1) saturate(59) hue-rotate(-375deg);
 }
 .Header-title {
 	font-size: 30px;
@@ -47,7 +54,7 @@ body {
 .Section {
 	margin: 20px;
 	border: 2px double var(--primary);
-	box-shadow: 0 0 2px 2px rgba(144, 226, 201, 0.7);
+	display: inline-block;
 }
 .Section-title {
 	margin: 0;
@@ -62,4 +69,22 @@ body {
 }
 .Section-content {
 	padding: 10px;
+}
+
+/* String */
+
+.String {
+	display: flex;
+	flex-direction: row;
+	transition: all 0.2s;
+}
+.String:hover {
+	background-color: var(--highlight);
+	cursor: pointer;
+}
+.String-value {
+	font-family: var(--monospace);
+	flex-grow: 1;
+	padding: 3px 3px;
+	border-radius: 2px;
 }

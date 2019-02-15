@@ -1,6 +1,28 @@
 (ns randomish.core
-    (:require
-      [reagent.core :as r]))
+  (:require
+    [reagent.core :as r]
+    [chance :refer [Chance]]))
+
+;; -------------------------
+;; Global
+
+(def string-pool "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ")
+
+(defn init-chance [] (new Chance (.now js/Date)))
+
+(def global-state
+  (r/atom
+    {
+     :chance (init-chance)
+     }))
+
+;; -------------------------
+;; Actions
+
+(defn generate-strings [chance length count]
+  (vec
+    (repeatedly count
+      #(.string chance (js-obj "pool" string-pool "length" length)))))
 
 ;; -------------------------
 ;; Views
@@ -15,18 +37,31 @@
    [:div.Section-title title]
    [:div.Section-content children]])
 
-(defn Strings []
-  [Section "Strings"
-    [:h4 "TODO"]])
+(defn String [value on-copy]
+  [:div.String
+   [:div.String-value
+    {:onClick on-copy} value]])
+
+(defn Strings [chance on-copy]
+  (let
+    [state (r/atom {:values (generate-strings chance 25 25)})
+     copy (fn [index]
+            (println "Copy " index))]
+    (fn [_]
+      [Section
+       "Strings"
+       (for [[index value] (map-indexed vector (:values @state))]
+         ^{:key value} [String value #(copy index)])
+       ])))
 
 (defn RootPage []
   [:div.Randomish
-    [Header]
-    [:div.Randomish-sections
-     [Strings]]])
+   [Header]
+   [:div.Randomish-sections
+    [Strings (:chance @global-state)]]])
 
 ;; -------------------------
-;; Initialize app
+;; App level
 
 (defn mount-root []
   (r/render [RootPage] (.getElementById js/document "app")))

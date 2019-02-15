@@ -81,4 +81,5 @@ pom.xml.asc
 
 ### Custom
 
-/old
+.rebel_readline_history
+node_modules
