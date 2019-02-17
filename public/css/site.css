@@ -31,14 +31,17 @@ body {
 	height: 100%;
 	transition: all 0.3s;
 }
+.Dice svg path {
+	fill: var(--background) !important;
+}
 .Dice:hover svg path {
-	fill: var(--highlight);
+	fill: var(--highlight) !important;
 }
 .Dice-clicked {
 	animation: Dice-spin 1.5s ease-out 1;
 }
 .Dice-clicked svg {
-	animation: Dice-scale 1s ease-out 1;
+	animation: Dice-scale 2s ease-out 1;
 }
 @keyframes Dice-spin {
 	0% {
@@ -72,7 +75,7 @@ body {
 .Header .Dice {
 	position: absolute;
 	top: 5px;
-	width: 80px;
+	width: 75px;
 	left: 10px;
 }
 .Header-dice svg path {
