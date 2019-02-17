@@ -177,6 +177,7 @@ body {
 .StringEntry {
 	display: flex;
 	flex-direction: row;
+	flex-grow: 1;
 	transition: all 0.2s;
 }
 .StringEntry:hover {
