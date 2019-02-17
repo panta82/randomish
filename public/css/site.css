@@ -5,6 +5,7 @@
 	--foreground: #e4fff8;
 	--primary: #90e2c9;
 	--highlight: #e63f11;
+	--active: #bf320f;
 
 	--monospace: "Droid Sans Mono", "Lucida Console", Monaco, monospace;
 }
@@ -22,11 +23,58 @@ body {
 	font-size: 16px;
 }
 
+/* App */
+
+.Randomish-sections {
+	padding: 10px;
+}
+
+/* Button */
+
+.Button {
+	border: 2px solid var(--primary);
+	font-family: var(--monospace);
+	border-radius: 3px;
+	padding: 2px 5px;
+	color: var(--primary);
+	background-color: transparent;
+	font-size: 18px;
+	font-weight: bold;
+	min-width: 28px;
+	cursor: pointer;
+	transition: all 0.2s;
+	outline: none;
+}
+.Button:hover {
+	color: var(--foreground);
+	border-color: var(--highlight);
+	background-color: var(--highlight);
+}
+.Button:active {
+	border-color: var(--active);
+	background-color: var(--active);
+	transform: translate(1px, 1px);
+}
+
+/* Toolbar */
+
+.Toolbar {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+.Toolbar > * {
+	margin-right: 5px;
+	margin-bottom: 5px;
+}
+
 /* Dice */
+.Dice * {
+	transition: all 0.2s;
+}
 .Dice svg {
 	width: 100%;
 	height: 100%;
-	transition: all 0.3s;
 }
 .Dice svg path {
 	fill: var(--background) !important;
@@ -36,6 +84,12 @@ body {
 }
 .Dice.Dice-clickable:hover svg path {
 	fill: var(--highlight) !important;
+}
+.Dice.Dice-clickable:active {
+	transform: translate(1px, 1px);
+}
+.Dice.Dice-clickable:active svg path {
+	fill: var(--active) !important;
 }
 .Dice.Dice-clicked {
 	animation: Dice-spin 1.5s ease-out 1;
@@ -92,9 +146,10 @@ body {
 /* Section */
 
 .Section {
-	margin: 20px;
+	margin: 20px 10px;
 	border: 2px solid var(--primary);
 	display: inline-block;
+	vertical-align: top;
 }
 .Section-title {
 	margin: 0;
@@ -109,6 +164,12 @@ body {
 }
 .Section-content {
 	padding: 10px;
+	overflow: hidden;
+}
+@media (max-width: 768px) {
+	.Section {
+		display: block;
+	}
 }
 
 /* Strings */

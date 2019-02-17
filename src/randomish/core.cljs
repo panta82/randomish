@@ -54,6 +54,9 @@
 ;; -------------------------
 ;; Views
 
+(defn Button [title on-click]
+  [:button.Button {:type "button" :onClick on-click} title])
+
 (defn Dice []
   (let [clicked (r/atom false)]
     (fn []
@@ -80,6 +83,9 @@
   [:div.Section
    [:div.Section-title title]
    [:div.Section-content children]])
+
+(defn Toolbar [& children]
+  [:div.Toolbar children])
 
 (defn StringEntry [value on-click]
   [:div.StringEntry
@@ -115,6 +121,9 @@
        (fn [_]
          [Section
           "Strings"
+          ^{:key "toolbar"} [Toolbar
+                             ^{:key "+"} [Button "+"]
+                             ^{:key "-"} [Button "-"]]
           (for [[index value] (map-indexed vector (:values @state))]
             ^{:key value} [StringEntry value #(copy index value)])])
        }
@@ -156,7 +165,7 @@
       [Section
        "History"
        (for [[index entry] (map-indexed vector @history-state)]
-         ^{:key entry} [HistoryEntry entry #(copy index entry)])])))
+         ^{:key (str entry)} [HistoryEntry entry #(copy index entry)])])))
 
 (defn RootPage []
   [:div.Randomish
