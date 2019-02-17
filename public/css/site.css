@@ -4,7 +4,7 @@
 	--background: #121a1b;
 	--foreground: #e4fff8;
 	--primary: #90e2c9;
-	--highlight: #9e3e04;
+	--highlight: #e63f11;
 
 	--monospace: "Droid Sans Mono", "Lucida Console", Monaco, monospace;
 }
@@ -22,6 +22,44 @@ body {
 	font-size: 16px;
 }
 
+/* Dice */
+.Dice {
+	cursor: pointer;
+}
+.Dice svg {
+	width: 100%;
+	height: 100%;
+	transition: all 0.3s;
+}
+.Dice:hover svg path {
+	fill: var(--highlight);
+}
+.Dice-clicked {
+	animation: Dice-spin 1.5s ease-out 1;
+}
+.Dice-clicked svg {
+	animation: Dice-scale 1s ease-out 1;
+}
+@keyframes Dice-spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(720deg);
+	}
+}
+@keyframes Dice-scale {
+	0% {
+		width: 100%;
+	}
+	50% {
+		width: 80%;
+	}
+	100% {
+		width: 100%;
+	}
+}
+
 /* Header */
 
 .Header {
@@ -31,15 +69,14 @@ body {
 	padding: 20px 40px;
 	margin-bottom: 40px;
 }
-.Header-logo {
+.Header .Dice {
 	position: absolute;
 	top: 5px;
 	width: 80px;
 	left: 10px;
-	transition: all 0.3s;
 }
-.Header-logo:hover {
-	filter: invert(0.5) sepia(1) saturate(59) hue-rotate(-375deg);
+.Header-dice svg path {
+	fill: var(--highlight);
 }
 .Header-title {
 	font-size: 30px;
