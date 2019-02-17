@@ -6,7 +6,8 @@
 
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/clojurescript "1.10.516"]
-                 [reagent "0.8.1"]]
+                 [reagent "0.8.1"]
+                 [alandipert/storage-atom "1.2.4"]]
 
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-figwheel "0.5.18"]]
@@ -35,7 +36,8 @@
                  :optimizations :none
                  :pretty-print true
                  :install-deps true
-                 :npm-deps {:chance "1.0.18"}}
+                 :npm-deps {:chance "1.0.18"
+                            :time-ago "0.2.1"}}
                 :figwheel
                 {:on-jsload "randomish.core/mount-root"
                  :open-urls ["http://localhost:3449/index.html"]}}

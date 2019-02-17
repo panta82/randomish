@@ -111,20 +111,41 @@ body {
 	padding: 10px;
 }
 
-/* String */
+/* Strings */
 
-.String {
+.StringEntry {
 	display: flex;
 	flex-direction: row;
 	transition: all 0.2s;
 }
-.String:hover {
+.StringEntry:hover {
 	background-color: var(--highlight);
 	cursor: pointer;
 }
-.String-value {
+.StringEntry-value {
 	font-family: var(--monospace);
 	flex-grow: 1;
 	padding: 3px 3px;
 	border-radius: 2px;
+}
+
+/* History */
+
+.HistoryEntry {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+}
+.HistoryEntry-value {
+	font-family: var(--monospace);
+	padding: 3px 3px;
+}
+.HistoryEntry-timestamp {
+	min-width: 60px;
+	text-align: right;
+	color: rgba(255,255,255,0.5);
+	font-size: 13px;
+}
+.HistoryEntry:hover {
+	background: rgba(255,255,255,0.1);
 }
