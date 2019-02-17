@@ -42,6 +42,9 @@
       (fn [old-history]
         (vec (take (:history-count @settings-state) (cons entry old-history)))))))
 
+(defn reset-history []
+  (reset! history-state []))
+
 (defn copy-to-clipboard [text]
   (let [el (.createElement js/document "textarea")]
     (aset el "textContent" text)
@@ -93,9 +96,10 @@
    [Dice]
    [:div.Header-title "Randomish"]])
 
-(defn Section [title & children]
+(defn Section [title header & children]
   [:div.Section
    [:div.Section-title title]
+   (if header [:div.Section-header header])
    [:div.Section-content children]])
 
 (defn Toolbar [& children]
@@ -195,6 +199,12 @@
     (fn []
       [Section
        "History"
+       ^{:key "toolbar"}
+       [Toolbar
+        ^{:key "Clear"} [Button
+                     {:title "Clear history"
+                      :onClick #(reset-history)}
+                     "Clear"]]
        (for [[index entry] (map-indexed vector @history-state)]
          ^{:key (str entry)} [HistoryEntry entry #(copy index entry)])])))
 
