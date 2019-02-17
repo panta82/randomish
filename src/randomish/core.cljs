@@ -203,8 +203,9 @@
        [Toolbar
         ^{:key "Clear"} [Button
                      {:title "Clear history"
-                      :onClick #(reset-history)}
-                     "Clear"]]
+                      :onClick #(reset-history)
+                      :disabled (empty? @history-state)}
+                     "\uD83D\uDDD1 Clear"]]
        (for [[index entry] (map-indexed vector @history-state)]
          ^{:key (str entry)} [HistoryEntry entry #(copy index entry)])])))
 

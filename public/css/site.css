@@ -6,6 +6,7 @@
 	--primary: #90e2c9;
 	--highlight: #e63f11;
 	--active: #bf320f;
+	--faded: rgba(255,255,255,0.5);
 
 	--monospace: "Droid Sans Mono", "Lucida Console", Monaco, monospace;
 }
@@ -40,14 +41,19 @@ body {
 	font-size: 18px;
 	font-weight: bold;
 	min-width: 28px;
-	cursor: pointer;
 	transition: all 0.2s;
 	outline: none;
+	cursor: pointer;
 }
-.Button:hover {
+.Button:not(:disabled):hover {
 	color: var(--foreground);
 	border-color: var(--highlight);
 	background-color: var(--highlight);
+}
+.Button:disabled {
+	cursor: default !important;
+	color: var(--faded);
+	border-color: var(--faded);
 }
 .Button:active {
 	border-color: var(--active);
@@ -153,7 +159,7 @@ body {
 }
 .Section-title {
 	margin: 0;
-	padding: 5px 20px;
+	padding: 5px 80px 5px 20px;
 	background: var(--primary);
 	color: var(--background);
 	border-bottom: 8px double var(--background);
@@ -209,7 +215,7 @@ body {
 .HistoryEntry-timestamp {
 	min-width: 60px;
 	text-align: right;
-	color: rgba(255,255,255,0.5);
+	color: var(--faded);
 	font-size: 13px;
 }
 .HistoryEntry:hover {
