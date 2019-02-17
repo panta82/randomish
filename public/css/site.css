@@ -23,9 +23,6 @@ body {
 }
 
 /* Dice */
-.Dice {
-	cursor: pointer;
-}
 .Dice svg {
 	width: 100%;
 	height: 100%;
@@ -34,13 +31,16 @@ body {
 .Dice svg path {
 	fill: var(--background) !important;
 }
-.Dice:hover svg path {
+.Dice.Dice-clickable {
+	cursor: pointer;
+}
+.Dice.Dice-clickable:hover svg path {
 	fill: var(--highlight) !important;
 }
-.Dice-clicked {
+.Dice.Dice-clicked {
 	animation: Dice-spin 1.5s ease-out 1;
 }
-.Dice-clicked svg {
+.Dice.Dice-clicked svg {
 	animation: Dice-scale 2s ease-out 1;
 }
 @keyframes Dice-spin {

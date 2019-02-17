@@ -31,16 +31,18 @@
   (let [clicked (r/atom false)]
     (fn []
       [:div.Dice
-       {:title "Click to re-roll!"
-        :class (if @clicked "Dice-clicked")
+       {:title (if @clicked "Re-rolling!" "Click to re-roll")
+        :class (if @clicked "Dice-clicked" "Dice-clickable")
         :dangerouslySetInnerHTML {:__html dice-svg}
         :onClick
-        #(go
-           (reset! clicked false)
-           (<! (timeout 10))
-           (reset! clicked true)
-           (swap! global-state update :chance init-chance))
-        }])))
+        #(if (not @clicked)
+           (go
+             (reset! clicked true)
+             (swap! global-state update :chance init-chance)
+             (<! (timeout 2000))
+             (reset! clicked false)
+             ))}
+       ])))
 
 (defn Header []
   [:div.Header
@@ -74,7 +76,7 @@
            (if (not= old-chance new-chance)
              (let
                [new-values (regenerate new-chance)]
-              (swap! state assoc :values new-values)))))
+               (swap! state assoc :values new-values)))))
 
        :reagent-render
        (fn [_]
