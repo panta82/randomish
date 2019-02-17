@@ -1,16 +1,20 @@
+# Randomish
+
+**Web page to generate random passwords and other randomish things**
+
+No web server involvement. Everything happens in browser.
+Generated things are saved to local storage (for later reference),
+but that can be emptied.
 
 ### Development mode
 
-To start the Figwheel compiler, navigate to the project folder and run the following command in the terminal:
+Project is based on clojurescript + reagent + figwheel toolset ("frontend only" template).
+
+To start dev environment, do:
 
 ```
 lein figwheel
 ```
-
-Figwheel will automatically push cljs changes to the browser.
-Once Figwheel starts up, you should be able to open the `public/index.html` page in the browser.
-
-### REPL
 
 The project is setup to start nREPL on port `7002` once Figwheel starts.
 Once you connect to the nREPL, run `(cljs)` to switch to the ClojureScript REPL.
