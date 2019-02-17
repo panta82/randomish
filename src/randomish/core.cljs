@@ -13,9 +13,7 @@
 
 (def global-state
   (r/atom
-    {
-     :chance (init-chance)
-     }))
+    {:chance (init-chance)}))
 
 ;; -------------------------
 ;; Actions
@@ -37,10 +35,11 @@
         :class (if @clicked "Dice-clicked")
         :dangerouslySetInnerHTML {:__html dice-svg}
         :onClick
-          #(go
-             (reset! clicked false)
-             (<! (timeout 0))
-             (reset! clicked true))
+        #(go
+           (reset! clicked false)
+           (<! (timeout 10))
+           (reset! clicked true)
+           (swap! global-state update :chance init-chance))
         }])))
 
 (defn Header []
@@ -60,15 +59,31 @@
 
 (defn Strings [chance on-copy]
   (let
-    [state (r/atom {:values (generate-strings chance 25 25)})
+    [regenerate (fn [chance] (generate-strings chance 25 25))
+     state (r/atom
+             {:values (regenerate chance)})
      copy (fn [index]
             (println "Copy " index))]
-    (fn [_]
-      [Section
-       "Strings"
-       (for [[index value] (map-indexed vector (:values @state))]
-         ^{:key value} [String value #(copy index)])
-       ])))
+    (r/create-class
+      {
+       :component-did-update
+       (fn [this old-argv]
+         (let
+           [new-chance (nth (r/argv this) 1)
+            old-chance (nth old-argv 1)]
+           (if (not= old-chance new-chance)
+             (let
+               [new-values (regenerate new-chance)]
+              (swap! state assoc :values new-values)))))
+
+       :reagent-render
+       (fn [_]
+         [Section
+          "Strings"
+          (for [[index value] (map-indexed vector (:values @state))]
+            ^{:key value} [String value #(copy index)])])
+       }
+      )))
 
 (defn RootPage []
   [:div.Randomish
