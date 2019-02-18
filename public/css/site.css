@@ -46,9 +46,9 @@ body {
 	cursor: pointer;
 }
 .Button:not(:disabled):hover {
-	color: var(--foreground);
-	border-color: var(--highlight);
-	background-color: var(--highlight);
+	color: var(--foreground) !important;
+	border-color: var(--highlight) !important;
+	background-color: var(--highlight) !important;
 }
 .Button:disabled {
 	cursor: default !important;
@@ -59,6 +59,11 @@ body {
 	border-color: var(--active);
 	background-color: var(--active);
 	transform: translate(1px, 1px);
+}
+
+.Button.ToggleButton.ToggleButton-on:not(:disabled) {
+	color: var(--background);
+	background-color: var(--primary);
 }
 
 /* Toolbar */
@@ -72,6 +77,13 @@ body {
 .Toolbar > * {
 	margin-right: 5px;
 	margin-bottom: 5px;
+}
+.ToolbarSplitter {
+	border-left: 2px dotted var(--faded);
+	margin-left: 5px;
+	width: 5px;
+	height: 10px;
+	align-self: center;
 }
 
 /* Dice */
