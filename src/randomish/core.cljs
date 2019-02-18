@@ -21,7 +21,9 @@
 
 (defonce global-state
   (r/atom
-    {:chance nil}))
+    {:chance nil
+     :last-notification-id 0
+     :notifications []}))
 
 (defonce history-state
   (local-storage
@@ -35,18 +37,42 @@
        :history-count 25
        :string-length 20
        :string-count 25
-       :string-pools
-       {
-        :lowercase true
-        :uppercase true
-        :digits true
-        :special false
-        }
+       :string-pools {
+                      :lowercase true
+                      :uppercase true
+                      :digits true
+                      :special false
+                      }
        })
     :settings))
 
 ;; -------------------------
 ;; Actions
+
+(defn show-notification [message]
+  (let [id (:last-notification-id (swap! global-state update :last-notification-id inc))
+        new-notification {:id id :message message :removing false}]
+    (go
+      (swap! global-state update :notifications conj new-notification)
+      (<! (timeout 2000))
+      (swap! global-state update :notifications
+        (fn [notifications]
+          (vec
+            (map
+              (fn [notification]
+                (if (= (:id notification) id)
+                  (assoc notification :removing true)
+                  notification))
+              notifications))))
+      (<! (timeout 1000))
+      (swap! global-state update :notifications
+        (fn [notifications]
+          (vec
+            (filter
+              (fn [notification]
+                (not= (:id notification) id))
+              notifications))))
+      )))
 
 (defn string-pool []
   (let [pools (:string-pools @settings-state)
@@ -67,7 +93,8 @@
         (vec (take (:history-count @settings-state) (cons entry old-history)))))))
 
 (defn reset-history []
-  (reset! history-state []))
+  (reset! history-state [])
+  (show-notification "✓ History cleared"))
 
 (defn copy-to-clipboard [text]
   (let [el (.createElement js/document "textarea")]
@@ -118,6 +145,7 @@
            (go
              (reset! clicked true)
              (swap! global-state update :chance init-chance)
+             (show-notification "✓ Re-rolled!")
              (<! (timeout 2000))
              (reset! clicked false)
              ))}
@@ -154,6 +182,7 @@
             (let [replacement (generate-string (:chance @state))]
               (swap! state update :values assoc index replacement)
               (copy-to-clipboard value)
+              (show-notification "\uD83D\uDCCB Copied to clipboard")
               (add-to-history value)))
      regenerate (fn []
                   (let [values (generate-strings (:chance @state))]
@@ -166,10 +195,12 @@
                              [raw (+ (:string-length settings) delta)
                               final (min (max raw 5) 100)]
                              (assoc settings :string-length final))))
+                       (show-notification (str "\uD83D\uDEE0 Changed string length to " (:string-length @settings-state)))
                        (regenerate)))
      toggle-pool (fn [pool]
                    (do
                      (swap! settings-state update-in [:string-pools pool] not)
+                     (show-notification "\uD83D\uDEE0 Changed character pool settings")
                      (regenerate)))
      ]
     (r/create-class
@@ -269,7 +300,8 @@
                  (subvec items 0 index)
                  (subvec items (inc index))))))
          (copy-to-clipboard (:value entry))
-         (add-to-history (:value entry))))
+         (add-to-history (:value entry))
+         (show-notification "\uD83D\uDCCB Copied to clipboard")))
      ]
     (fn []
       [Section
@@ -284,8 +316,20 @@
        (for [[index entry] (map-indexed vector @history-state)]
          ^{:key (str entry)} [HistoryEntry entry #(copy index entry)])])))
 
+(defn Notification [notification]
+  [:div.Notification
+   {:class (if (:removing notification) "Notification-removing")}
+   [:div.Notification-message
+    (:message notification)]])
+
+(defn Notifications []
+  [:div.Notifications
+   (for [notification (:notifications @global-state)]
+     ^{:key (:id notification)} [Notification notification])])
+
 (defn RootPage []
   [:div.Randomish
+   [Notifications]
    [Header]
    [:div.Randomish-sections
     [Strings (:chance @global-state)]
