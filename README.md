@@ -25,3 +25,5 @@ Once you connect to the nREPL, run `(cljs)` to switch to the ClojureScript REPL.
 lein clean
 lein package
 ```
+
+Run `scripts/deploy.sh` to deploy directly to github pages.

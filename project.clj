@@ -1,8 +1,7 @@
 (defproject randomish "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :description "Web page to generate random passwords and other randomish things"
+  :url "https://rand.pantas.net/"
+  :license {:name "MIT"}
 
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/clojurescript "1.10.516"]
@@ -24,41 +23,43 @@
              :nrepl-middleware [cider.piggieback/wrap-cljs-repl]
              :css-dirs ["public/css"]}
 
-  :cljsbuild {:builds
-              {:app
-               {:source-paths ["src" "env/dev/cljs"]
-                :compiler
-                {:main "randomish.dev"
-                 :output-to "public/js/app.js"
-                 :output-dir "public/js/out"
-                 :asset-path "js/out"
-                 :source-map true
-                 :optimizations :none
-                 :pretty-print true
-                 :install-deps true
-                 :npm-deps {:chance "1.0.18"
-                            :time-ago "0.2.1"}}
-                :figwheel
-                {:on-jsload "randomish.core/mount-root"
-                 :open-urls ["http://localhost:3449/index.html"]}}
+  :cljsbuild
+  {:builds
+   {:app
+    {:source-paths ["src" "env/dev/cljs"]
+     :compiler
+     {:main "randomish.dev"
+      :output-to "public/js/app.js"
+      :output-dir "public/build/out"
+      :asset-path "build/out"
+      :source-map true
+      :optimizations :none
+      :pretty-print true
+      :install-deps true
+      :npm-deps {:chance "1.0.18"
+                 :time-ago "0.2.1"}}
+     :figwheel
+     {:on-jsload "randomish.core/mount-root"
+      :open-urls ["http://localhost:3449/index.html"]}}
 
-               :release
-               {:source-paths ["src" "env/prod/cljs"]
-                :compiler
-                {:output-to "public/js/app.js"
-                 :output-dir "public/js/release"
-                 :asset-path "js/out"
-                 :optimizations :advanced
-                 :infer-externs true
-                 :pretty-print false
-                 :install-deps true
-                 :npm-deps {:chance "1.0.18"}}}
-               }}
+    :release
+    {:source-paths ["src" "env/prod/cljs"]
+     :compiler
+     {:output-to "public/js/app.js"
+      :output-dir "public/build/release"
+      :optimizations :simple
+      :infer-externs true
+      :pretty-print true
+      :source-map "public/js/app.js.map"
+      :install-deps true
+      :npm-deps {:chance "1.0.18"
+                 :time-ago "0.2.1"}}
+     }}}
 
-  :aliases {"package" ["do" "clean" ["cljsbuild" "once" "release"]]}
+   :aliases {"package" ["do" "clean" ["cljsbuild" "once" "release"]]}
 
-  :profiles {:dev {:source-paths ["src" "env/dev/clj"]
-                   :dependencies [[binaryage/devtools "0.9.10"]
-                                  [figwheel-sidecar "0.5.18"]
-                                  [nrepl "0.6.0"]
-                                  [cider/piggieback "0.3.10"]]}})
+   :profiles {:dev {:source-paths ["src" "env/dev/clj"]
+                    :dependencies [[binaryage/devtools "0.9.10"]
+                                   [figwheel-sidecar "0.5.18"]
+                                   [nrepl "0.6.0"]
+                                   [cider/piggieback "0.3.10"]]}})
