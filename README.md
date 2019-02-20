@@ -8,6 +8,8 @@ There is no web server involvement. Everything happens inside the browser.
 
 Generated data is saved to local storage for future reference (which can also be emptied).
 
+Mostly just an excuse to play a bit with clojurescript.
+
 ### Development mode
 
 Project is based on clojurescript + reagent + figwheel toolset ("frontend only" template).
