@@ -30,7 +30,7 @@
      :compiler
      {:main "randomish.dev"
       :output-to "public/js/app.js"
-      :output-dir "public/build/out"
+      :output-dir "public/js/build/out"
       :asset-path "build/out"
       :source-map true
       :optimizations :none
@@ -46,7 +46,7 @@
     {:source-paths ["src" "env/prod/cljs"]
      :compiler
      {:output-to "public/js/app.js"
-      :output-dir "public/build/release"
+      :output-dir "public/js/build/release"
       :optimizations :simple
       :infer-externs true
       :pretty-print true

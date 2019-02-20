@@ -15,7 +15,7 @@ lein package
 
 # Remove temp files
 echo "Cleaning..."
-rm -rf ./public/build/release
+rm -rf ./public/js/build/release
 
 echo "Deploying..."
 GIT_DEPLOY_DIR=public $DIR/git-directory-deploy.sh
