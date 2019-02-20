@@ -2,9 +2,11 @@
 
 **Web page to generate random passwords and other randomish things**
 
-No web server involvement. Everything happens in browser.
-Generated things are saved to local storage (for later reference),
-but that can be emptied.
+![Preview](public/randomish.png)
+
+There is no web server involvement. Everything happens inside the browser.
+
+Generated data is saved to local storage for future reference (which can also be emptied).
 
 ### Development mode
 
