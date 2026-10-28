@@ -159,7 +159,7 @@ code {
 	border-bottom: 10px double var(--background);
 	background: var(--primary);
 	color: var(--background);
-	padding: 20px 40px 20px 100px;
+	padding: 16px 30px 16px 100px;
 	margin-bottom: 5px;
 }
 .Header-title {
@@ -169,12 +169,6 @@ code {
 	text-transform: uppercase;
 	font-weight: bolder;
 	line-height: 1;
-}
-.Header-info {
-	margin-left: auto;
-	font-size: 13px;
-	opacity: 0.7;
-	text-align: right;
 }
 
 /* Dice */
@@ -228,19 +222,17 @@ code {
 	}
 }
 
-/* Length bar */
+/* Length bar, inside the header */
 
 .LengthBar {
-	flex: none;
+	flex: 1;
+	min-width: 0;
 	display: flex;
 	align-items: center;
 	gap: 14px;
-	margin: 15px 20px 0;
-	padding: 8px 14px;
-	border: 2px solid var(--primary);
+	margin-left: 30px;
 }
 .LengthBar-label {
-	color: var(--primary);
 	font-size: 18px;
 	font-style: italic;
 	font-weight: bolder;
@@ -248,17 +240,21 @@ code {
 }
 .LengthBar-number {
 	width: 80px;
-	border: 2px solid var(--primary);
+	border: 2px solid var(--background);
 	border-radius: 3px;
-	background: transparent;
-	color: var(--foreground);
+	background: var(--background);
+	color: var(--primary);
 	font: bold 20px var(--monospace);
 	text-align: center;
 	padding: 2px 4px;
 }
+.LengthBar-number:focus {
+	outline: none;
+	border-color: var(--highlight);
+}
 .LengthBar-edge {
-	color: var(--faded);
 	font-size: 13px;
+	opacity: 0.6;
 }
 .LengthBar-slider {
 	flex: 1;
@@ -272,12 +268,12 @@ code {
 .LengthBar-slider::-webkit-slider-runnable-track {
 	height: 4px;
 	border-radius: 2px;
-	background: var(--primary);
+	background: var(--background);
 }
 .LengthBar-slider::-moz-range-track {
 	height: 4px;
 	border-radius: 2px;
-	background: var(--primary);
+	background: var(--background);
 }
 .LengthBar-slider::-webkit-slider-thumb {
 	appearance: none;
@@ -285,16 +281,16 @@ code {
 	height: 22px;
 	margin-top: -9px;
 	border-radius: 50%;
-	border: 3px solid var(--primary);
-	background: var(--background);
+	border: 3px solid var(--background);
+	background: var(--primary);
 	transition: all 0.2s;
 }
 .LengthBar-slider::-moz-range-thumb {
 	width: 16px;
 	height: 16px;
 	border-radius: 50%;
-	border: 3px solid var(--primary);
-	background: var(--background);
+	border: 3px solid var(--background);
+	background: var(--primary);
 	transition: all 0.2s;
 }
 .LengthBar-slider:hover::-webkit-slider-thumb {
@@ -304,6 +300,19 @@ code {
 .LengthBar-slider:hover::-moz-range-thumb {
 	border-color: var(--highlight);
 	background: var(--highlight);
+}
+
+.About {
+	position: fixed;
+	right: 22px;
+	bottom: 3px;
+	font-size: 11px;
+	color: var(--faded);
+	text-decoration: none;
+}
+.About:hover {
+	color: var(--highlight);
+	text-decoration: underline;
 }
 
 /* Board: collection strip (scrolls sideways) + pinned history */
@@ -690,16 +699,17 @@ button.Column-name:hover {
 	.Header-title {
 		font-size: 24px;
 	}
-	.Header-info {
-		display: none;
-	}
 	.Dice {
 		width: 56px;
 	}
+	.Header {
+		flex-wrap: wrap;
+		row-gap: 10px;
+	}
 	.LengthBar {
-		margin: 10px 10px 0;
+		flex-basis: 100%;
+		margin-left: 0;
 		gap: 10px;
-		padding: 6px 10px;
 	}
 	.LengthBar-label,
 	.LengthBar-edge {
@@ -739,7 +749,7 @@ button.Column-name:hover {
 
 	.Board {
 		gap: 10px;
-		padding: 10px;
+		padding: 10px 10px 18px;
 		overflow-x: auto;
 		scroll-snap-type: x mandatory;
 		scroll-padding-inline: 10px;

@@ -3,7 +3,7 @@ import { Collection, label, makeCollection } from './collections';
 import { Column, ROW_HEIGHT } from './components/Column';
 import { EditModal } from './components/EditModal';
 import { Icon } from './components/Icon';
-import { Header, LengthBar, Toasts } from './components/Header';
+import { Header, Toasts } from './components/Header';
 import { History } from './components/History';
 import { state } from './store';
 
@@ -39,7 +39,6 @@ export function App() {
     <div class="App" style={{ '--row-height': `${ROW_HEIGHT}px` }}>
       <Toasts />
       <Header />
-      <LengthBar />
 
       <nav class="Tabs">
         <For each={state.collections}>
@@ -73,6 +72,10 @@ export function App() {
         </div>
         <History />
       </main>
+
+      <a class="About" href="https://github.com/panta82/randomish" target="_blank" rel="noopener">
+        about
+      </a>
 
       <Show when={editing()} keyed>
         {(e) => <EditModal collection={e.collection} isNew={e.isNew} onClose={() => setEditing(null)} />}

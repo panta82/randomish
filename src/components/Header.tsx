@@ -33,17 +33,12 @@ export function Header() {
     <header class="Header">
       <Dice />
       <h1 class="Header-title">Randomish</h1>
-      <div class="Header-info">
-        Runs entirely in your browser, nothing is sent anywhere ·{' '}
-        <a href="https://github.com/panta82/randomish" target="_blank" rel="noopener">
-          source
-        </a>
-      </div>
+      <LengthBar />
     </header>
   );
 }
 
-export function LengthBar() {
+function LengthBar() {
   // The log scale maps many slider positions to one length, so keep the raw position
   // and only resync it when the length changes from elsewhere (eg. the number field)
   const [position, setPosition] = createSignal(toSlider(state.length));

@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "dev": {
+      "type": "service",
+      "command": "BEHIND_PROXY=1 npx vite --host 127.0.0.1 --port ${PASEO_PORT:-5179} --strictPort"
+    },
+    "test": {
+      "command": "npm test"
+    }
+  }
+}
