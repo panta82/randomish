@@ -1,47 +1,43 @@
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack } from 'solid-js';
-import { Collection, displayWidth, entropyBits, generate, label, validate } from '../collections';
-import { Icon } from './Icon';
+import { Collection, displayWidth, generationKey, label, prepare } from '../collections';
 import { addToHistory, copy, rollEpoch, state } from '../store';
+import { Icon } from './Icon';
 
 /** Must match --row-height in CSS */
 export const ROW_HEIGHT = 22;
 const LIST_PADDING = 16;
 
 export function formatBits(bits: number): string {
-  return bits >= 10_000 ? `${(bits / 1000).toFixed(1)}k` : String(Math.floor(bits));
+  const n = Math.floor(bits);
+  return `${n >= 10_000 ? `${(n / 1000).toFixed(1)}k` : n} ${n === 1 ? 'bit' : 'bits'}`;
+}
+
+export function bitsTitle(bits: number, poolSize: number | null): string {
+  return `${bits.toFixed(1)} bits of entropy per value` + (poolSize ? `, from ${poolSize} characters` : '');
 }
 
 export function Column(props: { collection: Collection; onEdit: () => void }) {
   const collection = () => props.collection;
   const [rows, setRows] = createSignal(0);
   const [values, setValues] = createSignal<string[]>([]);
-  const [error, setError] = createSignal<string | null>(null);
 
-  const problem = createMemo(() => validate(collection()) ?? error());
-  const bits = createMemo(() => (validate(collection()) ? 0 : entropyBits(collection(), state.length)));
+  // Only rebuild the generator when the values it produces would change
+  const key = createMemo(() => generationKey(collection(), state.length));
+  const prepared = createMemo(() => {
+    key();
+    return untrack(() => prepare(collection(), state.length));
+  });
 
-  const make = (count: number): string[] => {
-    try {
-      return Array.from({ length: count }, () => generate(collection(), state.length));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      return [];
-    }
-  };
+  const make = (count: number) => Array.from({ length: count }, prepared().next);
+  const regenerate = () => setValues(prepared().problem ? [] : make(rows()));
 
-  const regenerate = () => {
-    setError(null);
-    setValues(validate(collection()) ? [] : make(rows()));
-  };
-
-  // Any rule change, length change or dice roll gives a fresh set
-  createEffect(on([() => JSON.stringify(collection()), () => state.length, rollEpoch], regenerate, { defer: true }));
+  createEffect(on([prepared, rollEpoch], regenerate, { defer: true }));
 
   // Growing the window adds rows, shrinking keeps the existing values around
   createEffect(
     on(rows, (count) => {
       const missing = count - untrack(values).length;
-      if (missing > 0 && !untrack(problem)) setValues((v) => [...v, ...make(missing)]);
+      if (missing > 0 && !untrack(prepared).problem) setValues((v) => [...v, ...make(missing)]);
     }),
   );
 
@@ -54,12 +50,19 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
     onCleanup(() => observer.disconnect());
   });
 
-  const use = (index: number) => {
+  let copying = false;
+  const use = async (index: number) => {
+    if (copying) return;
+    copying = true;
     const value = values()[index];
-    copy(value);
-    addToHistory(value, collection());
-    const [replacement] = make(1);
-    setValues((v) => v.map((old, i) => (i === index ? replacement : old)));
+    try {
+      if (!(await copy(value))) return;
+      addToHistory(value, collection());
+      // Values may have been regenerated while we waited
+      setValues((v) => v.map((old, i) => (i === index && old === value ? prepared().next() : old)));
+    } finally {
+      copying = false;
+    }
   };
 
   return (
@@ -68,9 +71,9 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
         <button class="Column-name" title="Edit rules" onClick={props.onEdit}>
           {label(collection())}
         </button>
-        <Show when={bits()}>
-          <span class="Column-bits" title={`${bits().toFixed(1)} bits of entropy per value`}>
-            {formatBits(bits())} bit
+        <Show when={!prepared().problem}>
+          <span class="Column-bits" title={bitsTitle(prepared().bits, prepared().poolSize)}>
+            {formatBits(prepared().bits)}
           </span>
         </Show>
         <button class="IconButton" title="Generate new values" onClick={regenerate}>
@@ -78,17 +81,17 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
         </button>
       </header>
       <div class="Column-list" ref={list}>
-        <Show when={problem()} fallback={
+        <Show when={prepared().problem} fallback={
           <For each={values().slice(0, rows())}>
             {(value, i) => (
-              <button class="Value" title={value.length > 40 ? value : undefined} onClick={() => use(i())}>
+              <button class="Value" title={value} onClick={() => use(i())}>
                 {value}
               </button>
             )}
           </For>
         }>
           <div class="Column-problem">
-            ⚠ {problem()}
+            ⚠ {prepared().problem}
             <button class="Button" onClick={props.onEdit}>
               Edit rules
             </button>

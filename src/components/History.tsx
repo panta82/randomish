@@ -26,9 +26,8 @@ export function ago(timestamp: number, at: number): string {
 }
 
 export function History() {
-  const use = (index: number) => {
-    copy(state.history[index].value);
-    touchHistory(index);
+  const use = async (value: string) => {
+    if (await copy(value)) touchHistory(value);
   };
 
   const clear = () => {
@@ -45,10 +44,10 @@ export function History() {
         </button>
       </header>
       <div class="Column-list History-list">
-        <Show when={state.history.length} fallback={<div class="History-empty">Click any value to copy it. It will show up here.</div>}>
+        <Show when={state.history.length} fallback={<div class="History-empty">Click a value to copy it. Copied values are kept here, on this device, until you clear them.</div>}>
           <For each={state.history}>
-            {(entry, i) => (
-              <button class="History-entry" title={entry.value} onClick={() => use(i())}>
+            {(entry) => (
+              <button class="History-entry" title={entry.value} onClick={() => use(entry.value)}>
                 <span class="History-value">{entry.value}</span>
                 <span class="History-tag">{entry.tag}</span>
                 <time class="History-time" dateTime={new Date(entry.timestamp).toISOString()}>

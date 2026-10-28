@@ -1,6 +1,6 @@
 import { createEffect, createRoot, createSignal } from 'solid-js';
 import { createStore, produce, reconcile } from 'solid-js/store';
-import { clampLength, Collection, defaultCollections, makeCollection, shortLabel } from './collections';
+import { clampLength, Collection, defaultCollections, normalizeCollection, shortLabel } from './collections';
 
 const STORAGE_KEY = 'randomish:v2';
 export const HISTORY_LIMIT = 100;
@@ -8,7 +8,6 @@ export const HISTORY_LIMIT = 100;
 export interface HistoryEntry {
   value: string;
   timestamp: number;
-  collectionId: string;
   tag: string;
 }
 
@@ -23,6 +22,12 @@ function defaultState(): AppState {
   return { version: 2, length: 20, collections: defaultCollections(), history: [] };
 }
 
+function isHistoryEntry(entry: unknown): entry is HistoryEntry {
+  const e = entry as HistoryEntry;
+  return typeof e?.value === 'string' && Number.isFinite(e.timestamp) && typeof e.tag === 'string';
+}
+
+/** Parse stored state, trusting nothing about its shape */
 function parse(raw: string | null): AppState {
   const fallback = defaultState();
   if (!raw) return fallback;
@@ -30,31 +35,28 @@ function parse(raw: string | null): AppState {
     const data = JSON.parse(raw);
     if (data?.version !== 2) return fallback;
     const collections = Array.isArray(data.collections)
-      ? data.collections.map((c: Partial<Collection>) => makeCollection(c))
+      ? data.collections.map(normalizeCollection).filter((c: Collection | null) => c !== null)
       : [];
     return {
       version: 2,
       length: clampLength(Number(data.length)),
       collections: collections.length ? collections : fallback.collections,
-      history: Array.isArray(data.history) ? data.history.slice(0, HISTORY_LIMIT) : [],
+      history: Array.isArray(data.history) ? data.history.filter(isHistoryEntry).slice(0, HISTORY_LIMIT) : [],
     };
   } catch {
     return fallback;
   }
 }
 
-export const [state, setState] = createStore<AppState>(parse(localStorage.getItem(STORAGE_KEY)));
+function load(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
-createRoot(() => {
-  createEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  });
-});
-
-// Keep multiple open tabs in sync
-window.addEventListener('storage', (e) => {
-  if (e.key === STORAGE_KEY) setState(reconcile(parse(e.newValue)));
-});
+export const [state, setState] = createStore<AppState>(parse(load()));
 
 // ---------------------------------------------------------------------------
 // Actions
@@ -63,13 +65,16 @@ export function setLength(length: number) {
   setState('length', clampLength(length));
 }
 
-export function saveCollection(collection: Collection) {
-  const index = state.collections.findIndex((c) => c.id === collection.id);
-  if (index >= 0) {
-    setState('collections', index, reconcile(collection));
-  } else {
-    setState('collections', state.collections.length, collection);
-  }
+/** Insert or update a collection, optionally moving it to a new position */
+export function saveCollection(collection: Collection, position?: number) {
+  setState(
+    'collections',
+    produce((list) => {
+      const index = list.findIndex((c) => c.id === collection.id);
+      if (index >= 0) list.splice(index, 1);
+      list.splice(position ?? (index >= 0 ? index : list.length), 0, collection);
+    }),
+  );
 }
 
 export function deleteCollection(id: string) {
@@ -77,35 +82,18 @@ export function deleteCollection(id: string) {
   setState('collections', (list) => list.filter((c) => c.id !== id));
 }
 
-export function moveCollection(id: string, delta: number) {
-  setState(
-    'collections',
-    produce((list) => {
-      const from = list.findIndex((c) => c.id === id);
-      const to = from + delta;
-      if (from < 0 || to < 0 || to >= list.length) return;
-      const [item] = list.splice(from, 1);
-      list.splice(to, 0, item);
-    }),
-  );
-}
-
 export function addToHistory(value: string, collection: Collection) {
   if (collection.skipHistory) return;
-  const entry: HistoryEntry = {
-    value,
-    timestamp: Date.now(),
-    collectionId: collection.id,
-    tag: shortLabel(collection),
-  };
+  const entry: HistoryEntry = { value, timestamp: Date.now(), tag: shortLabel(collection) };
   setState('history', (history) => [entry, ...history.filter((h) => h.value !== value)].slice(0, HISTORY_LIMIT));
 }
 
 /** Move an existing entry back to the top, as it was just used again */
-export function touchHistory(index: number) {
+export function touchHistory(value: string) {
   setState('history', (history) => {
-    const entry = { ...history[index], timestamp: Date.now() };
-    return [entry, ...history.slice(0, index), ...history.slice(index + 1)];
+    const entry = history.find((h) => h.value === value);
+    if (!entry) return history;
+    return [{ ...entry, timestamp: Date.now() }, ...history.filter((h) => h !== entry)];
   });
 }
 
@@ -136,12 +124,37 @@ export function toast(message: string) {
   setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), 2400);
 }
 
-export async function copy(value: string) {
+/** Copy to clipboard and report whether it worked */
+export async function copy(value: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(value);
     toast('Copied to clipboard');
+    return true;
   } catch (err) {
     console.error('Failed to copy', err);
     toast('Could not copy to clipboard');
+    return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Persistence
+
+createRoot(() => {
+  let warned = false;
+  createEffect(() => {
+    const json = JSON.stringify(state);
+    try {
+      localStorage.setItem(STORAGE_KEY, json);
+    } catch (err) {
+      console.error('Failed to save', err);
+      if (!warned) toast("Can't save to browser storage. Changes will be lost on reload.");
+      warned = true;
+    }
+  });
+});
+
+// Keep multiple open tabs in sync
+window.addEventListener('storage', (e) => {
+  if (e.key === STORAGE_KEY) setState(reconcile(parse(e.newValue)));
+});

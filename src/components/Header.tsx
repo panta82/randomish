@@ -1,7 +1,7 @@
-import { createSignal, For } from 'solid-js';
+import { createEffect, createSignal, For } from 'solid-js';
 import { MAX_LENGTH, MIN_LENGTH } from '../collections';
 import diceSvg from '../dice.svg?raw';
-import { setLength, setRollEpoch, state, toast, toasts } from '../store';
+import { setLength, setRollEpoch, state, toasts } from '../store';
 
 const SLIDER_STEPS = 1000;
 const LOG_MAX = Math.log2(MAX_LENGTH);
@@ -15,7 +15,6 @@ function Dice() {
     if (rolling()) return;
     setRolling(true);
     setRollEpoch((e) => e + 1);
-    toast('Re-rolled everything');
     setTimeout(() => setRolling(false), 1600);
   };
   return (
@@ -35,7 +34,7 @@ export function Header() {
       <Dice />
       <h1 class="Header-title">Randomish</h1>
       <div class="Header-info">
-        Everything is generated and stored in your browser ·{' '}
+        Runs entirely in your browser, nothing is sent anywhere ·{' '}
         <a href="https://github.com/panta82/randomish" target="_blank" rel="noopener">
           source
         </a>
@@ -45,6 +44,17 @@ export function Header() {
 }
 
 export function LengthBar() {
+  // The log scale maps many slider positions to one length, so keep the raw position
+  // and only resync it when the length changes from elsewhere (eg. the number field)
+  const [position, setPosition] = createSignal(toSlider(state.length));
+  createEffect(() => {
+    if (fromSlider(position()) !== state.length) setPosition(toSlider(state.length));
+  });
+  const onSlide = (value: number) => {
+    setPosition(value);
+    setLength(fromSlider(value));
+  };
+
   const onNumber = (e: Event & { currentTarget: HTMLInputElement }) => {
     const n = Number(e.currentTarget.value);
     if (e.currentTarget.value !== '' && Number.isFinite(n)) setLength(n);
@@ -72,8 +82,8 @@ export function LengthBar() {
         aria-label="Length"
         min={0}
         max={SLIDER_STEPS}
-        value={toSlider(state.length)}
-        onInput={(e) => setLength(fromSlider(Number(e.currentTarget.value)))}
+        value={position()}
+        onInput={(e) => onSlide(Number(e.currentTarget.value))}
       />
       <span class="LengthBar-edge">{MAX_LENGTH}</span>
     </div>

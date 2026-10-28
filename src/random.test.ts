@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { autoLabel, entropyBits, generate, makeCollection, validate } from './collections';
+import { autoLabel, Collection, generationKey, makeCollection, normalizeCollection, prepare } from './collections';
 import {
   buildCharset,
+  Charset,
   charsetEntropy,
+  charsetGenerator,
   CharRules,
   DEFAULT_SYMBOLS,
-  generateFromCharset,
   log2Big,
   randomBelow,
   randomInt,
@@ -61,36 +62,50 @@ describe('randomBelow', () => {
   });
 });
 
+const charset = (r: CharRules, length: number): Charset => {
+  const cs = buildCharset(r, length);
+  if (typeof cs === 'string') throw new Error(cs);
+  return cs;
+};
+
 describe('buildCharset', () => {
   it('combines classes', () => {
-    expect(buildCharset(rules(), 10).pool.length).toBe(62);
-    expect(buildCharset(rules({ symbols: true }), 10).pool.length).toBe(70);
+    expect(charset(rules(), 10).pool.length).toBe(62);
+    expect(charset(rules({ symbols: true }), 10).pool.length).toBe(70);
   });
 
   it('drops look-alikes, excluded and duplicate chars', () => {
-    const cs = buildCharset(rules({ noLookalikes: true, exclude: 'abc', extra: 'xyz€ ' }), 10);
+    const cs = charset(rules({ noLookalikes: true, exclude: 'abc', extra: 'xyz€ ' }), 10);
     for (const c of 'Il1O0oabc ') expect(cs.pool).not.toContain(c);
     expect(cs.pool).toContain('€');
     expect(new Set(cs.pool).size).toBe(cs.pool.length);
   });
 
-  it('only requires groups when there is room for them', () => {
-    expect(buildCharset(rules({ requireEach: true }), 3).required.length).toBe(3);
-    expect(buildCharset(rules({ requireEach: true }), 2).required.length).toBe(0);
+  it('limits leading characters', () => {
+    expect(charset(rules({ symbols: true, noLeadingSymbol: true }), 10).leading.length).toBe(62);
   });
 
-  it('limits leading characters', () => {
-    const cs = buildCharset(rules({ symbols: true, noLeadingSymbol: true }), 10);
-    expect(cs.leading.length).toBe(62);
+  it('requires a lone class when extras could replace it', () => {
+    expect(charset(rules({ lower: false, upper: false, extra: '!', requireEach: true }), 1).required).toHaveLength(1);
+  });
+
+  it('reports rules it cannot honor', () => {
+    expect(buildCharset(rules({ lower: false, upper: false, digits: false }), 5)).toMatch(/No characters/);
+    expect(buildCharset(rules({ exclude: '0123456789' }), 5)).toMatch(/No digits/);
+    expect(buildCharset(rules({ requireEach: true }), 2)).toMatch(/at least 3/);
+    const symbolsOnly = rules({ lower: false, upper: false, digits: false, symbols: true, noLeadingSymbol: true });
+    expect(buildCharset(symbolsOnly, 5)).toMatch(/nothing can go first/);
+    // One symbol among hundreds of extra characters, in a 4 char string
+    const strict = rules({ symbols: true, symbolSet: '!', requireEach: true, extra: String.fromCharCode(...Array.from({ length: 2000 }, (_, i) => 0x4e00 + i)) });
+    expect(buildCharset(strict, 4)).toMatch(/too strict/);
   });
 });
 
-describe('generateFromCharset', () => {
+describe('charsetGenerator', () => {
   it('honors every rule', () => {
-    const r = rules({ symbols: true, requireEach: true, noLeadingSymbol: true, noLookalikes: true });
+    const next = charsetGenerator(charset(rules({ symbols: true, requireEach: true, noLeadingSymbol: true, noLookalikes: true }), 4), 4);
     for (let i = 0; i < 2000; i++) {
-      const cs = buildCharset(r, 4);
-      const s = generateFromCharset(cs, 4);
+      const s = next();
       expect(s).toHaveLength(4);
       expect(s).toMatch(/[a-z]/);
       expect(s).toMatch(/[A-Z]/);
@@ -101,9 +116,8 @@ describe('generateFromCharset', () => {
     }
   });
 
-  it('handles empty pool and long strings', () => {
-    expect(generateFromCharset(buildCharset(rules({ lower: false, upper: false, digits: false }), 5), 5)).toBe('');
-    expect(generateFromCharset(buildCharset(rules(), 1024), 1024)).toHaveLength(1024);
+  it('handles long strings', () => {
+    expect(charsetGenerator(charset(rules(), 1024), 1024)()).toHaveLength(1024);
   });
 });
 
@@ -112,7 +126,7 @@ describe('charsetEntropy', () => {
     // Tiny alphabet so we can enumerate: {a,b} lower, {A} upper, {!} symbols
     const r = rules({ digits: false, symbols: true, symbolSet: '!', exclude: 'cdefghijklmnopqrstuvwxyzBCDEFGHIJKLMNOPQRSTUVWXYZ', requireEach: true, noLeadingSymbol: true });
     const length = 4;
-    const cs = buildCharset(r, length);
+    const cs = charset(r, length);
     let count = 0;
     const walk = (prefix: string[]) => {
       if (prefix.length === length) {
@@ -127,11 +141,11 @@ describe('charsetEntropy', () => {
   });
 
   it('is length * log2(pool) without rules', () => {
-    expect(charsetEntropy(buildCharset(rules(), 20), 20)).toBeCloseTo(20 * Math.log2(62), 6);
+    expect(charsetEntropy(charset(rules(), 20), 20)).toBeCloseTo(20 * Math.log2(62), 6);
   });
 
   it('copes with huge numbers', () => {
-    const bits = charsetEntropy(buildCharset(rules({ symbols: true, requireEach: true }), 1024), 1024);
+    const bits = charsetEntropy(charset(rules({ symbols: true, requireEach: true }), 1024), 1024);
     expect(bits).toBeGreaterThan(6200);
     expect(bits).toBeLessThan(1024 * Math.log2(70) + 0.001);
   });
@@ -143,19 +157,38 @@ describe('charsetEntropy', () => {
 });
 
 describe('collections', () => {
+  const next = (overrides: Partial<Collection>, length = 12) => prepare(makeCollection(overrides), length).next();
+
   it('generates every kind', () => {
-    expect(generate(makeCollection(), 12)).toHaveLength(12);
-    expect(generate(makeCollection({ length: 5 }), 12)).toHaveLength(5);
-    expect(generate(makeCollection({ kind: 'hex' }), 8)).toMatch(/^[0-9a-f]{8}$/);
-    expect(generate(makeCollection({ kind: 'uuid' }), 8)).toMatch(/^[0-9a-f-]{36}$/);
-    const n = Number(generate(makeCollection({ kind: 'number', min: 5, max: 6 }), 8));
-    expect([5, 6]).toContain(n);
+    expect(next({})).toHaveLength(12);
+    expect(next({ length: 5 })).toHaveLength(5);
+    expect(next({ kind: 'hex' }, 8)).toMatch(/^[0-9a-f]{8}$/);
+    expect(next({ kind: 'uuid' })).toMatch(/^[0-9a-f-]{36}$/);
+    expect(['5', '6']).toContain(next({ kind: 'number', min: 5, max: 6 }));
   });
 
-  it('labels and validates', () => {
+  it('labels and reports problems', () => {
     expect(autoLabel(makeCollection({ symbols: true }))).toBe('a-zA-Z0-9!@#');
-    expect(validate(makeCollection({ lower: false, upper: false, digits: false }))).toBeTruthy();
-    expect(validate(makeCollection({ kind: 'number', min: 3, max: 1 }))).toBeTruthy();
-    expect(entropyBits(makeCollection({ kind: 'number', min: 1, max: 1024 }), 0)).toBe(10);
+    expect(prepare(makeCollection({ lower: false, upper: false, digits: false }), 10).problem).toBeTruthy();
+    expect(prepare(makeCollection({ kind: 'number', min: 3, max: 1 }), 10).problem).toBeTruthy();
+    expect(prepare(makeCollection({ kind: 'number', min: 1, max: 1024 }), 10).bits).toBe(10);
+  });
+
+  it('only changes the generation key when output would change', () => {
+    const c = makeCollection();
+    const key = generationKey(c, 20);
+    expect(generationKey({ ...c, name: 'x', skipHistory: true }, 20)).toBe(key);
+    expect(generationKey({ ...c, exclude: 'a' }, 20)).not.toBe(key);
+    expect(generationKey({ ...c, kind: 'uuid' }, 20)).toBe(generationKey({ ...c, kind: 'uuid' }, 30));
+  });
+
+  it('normalizes untrusted stored data', () => {
+    expect(normalizeCollection(null)).toBeNull();
+    const c = normalizeCollection({ name: null, kind: 'evil', lower: 'yes', length: 5000, symbolSet: '!' })!;
+    expect(c.name).toBe('');
+    expect(c.kind).toBe('chars');
+    expect(c.lower).toBe(true);
+    expect(c.length).toBe(1024);
+    expect(c.symbolSet).toBe('!');
   });
 });

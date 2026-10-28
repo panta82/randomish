@@ -5,17 +5,16 @@ import {
   Collection,
   CollectionKind,
   effectiveLength,
-  entropyBits,
-  generate,
+  generationKey,
   KIND_LABELS,
   MAX_LENGTH,
   MIN_LENGTH,
+  prepare,
   usesLength,
-  validate,
 } from '../collections';
 import { CharClass, LOOKALIKES } from '../random';
-import { deleteCollection, moveCollection, saveCollection, state, toast } from '../store';
-import { formatBits } from './Column';
+import { deleteCollection, saveCollection, state, toast } from '../store';
+import { bitsTitle, formatBits } from './Column';
 import { Icon } from './Icon';
 
 const CLASS_BUTTONS: [CharClass, string][] = [
@@ -31,19 +30,13 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
   const [draft, setDraft] = createStore<Collection>(structuredClone(unwrap(props.collection)));
   const [sample, setSample] = createSignal('');
   const [confirmDelete, setConfirmDelete] = createSignal(false);
+  // Reordering is part of the draft too, applied on save
+  const [position, setPosition] = createSignal(state.collections.findIndex((c) => c.id === draft.id));
 
-  const problem = createMemo(() => validate(draft));
-  const index = () => state.collections.findIndex((c) => c.id === draft.id);
-
-  const resample = () => {
-    if (problem()) return setSample('');
-    try {
-      setSample(generate(draft, state.length));
-    } catch (err) {
-      setSample(`⚠ ${err instanceof Error ? err.message : err}`);
-    }
-  };
-  createEffect(on(() => JSON.stringify(draft) + state.length, resample));
+  const prepared = createMemo(on(() => generationKey(draft, state.length), () => prepare(draft, state.length)));
+  const problem = () => prepared().problem;
+  const resample = () => setSample(prepared().next());
+  createEffect(on(prepared, resample));
 
   let dialog!: HTMLDialogElement;
   onMount(() => dialog.showModal());
@@ -52,7 +45,7 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
   const save = (e: SubmitEvent) => {
     e.preventDefault();
     if (problem()) return;
-    saveCollection(structuredClone(unwrap(draft)));
+    saveCollection(structuredClone(unwrap(draft)), position());
     toast(props.isNew ? 'Collection added' : 'Collection saved');
     close();
   };
@@ -64,7 +57,6 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
     close();
   };
 
-  const move = (delta: number) => moveCollection(draft.id, delta);
 
   const check = (key: BoolKey, text: JSX.Element) => (
     <label class="Check">
@@ -176,7 +168,9 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
           <div class="Preview">
             <span class="Preview-value">{problem() ? `⚠ ${problem()}` : sample()}</span>
             <Show when={!problem()}>
-              <span class="Preview-bits">{formatBits(entropyBits(draft, state.length))} bits</span>
+              <span class="Preview-bits" title={bitsTitle(prepared().bits, prepared().poolSize)}>
+                {formatBits(prepared().bits)}
+              </span>
               <button type="button" class="IconButton IconButton-light" title="Another sample" onClick={resample}>
                 <Icon name="refresh" />
               </button>
@@ -195,10 +189,10 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
             >
               <Icon name="trash" size={14} /> {confirmDelete() ? 'Really delete?' : 'Delete'}
             </button>
-            <button type="button" class="Button" title="Move left" disabled={index() <= 0} onClick={() => move(-1)}>
+            <button type="button" class="Button" title="Move left" disabled={position() <= 0} onClick={() => setPosition((p) => p - 1)}>
               <Icon name="left" size={14} />
             </button>
-            <button type="button" class="Button" title="Move right" disabled={index() >= state.collections.length - 1} onClick={() => move(1)}>
+            <button type="button" class="Button" title="Move right" disabled={position() >= state.collections.length - 1} onClick={() => setPosition((p) => p + 1)}>
               <Icon name="right" size={14} />
             </button>
           </Show>

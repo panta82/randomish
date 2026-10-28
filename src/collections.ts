@@ -1,9 +1,9 @@
 import {
   buildCharset,
   charsetEntropy,
+  charsetGenerator,
   CharRules,
   DEFAULT_SYMBOLS,
-  generateFromCharset,
   HEX_CHARS,
   randomInt,
 } from './random';
@@ -60,6 +60,19 @@ export function makeCollection(overrides: Partial<Collection> = {}): Collection 
   };
 }
 
+/** Turn untrusted stored data into a valid collection, or null if it's not salvageable */
+export function normalizeCollection(data: unknown): Collection | null {
+  if (!data || typeof data !== 'object') return null;
+  const raw = data as Record<string, unknown>;
+  const result = makeCollection() as unknown as Record<string, unknown>;
+  for (const key of Object.keys(result)) {
+    if (typeof raw[key] === typeof result[key]) result[key] = raw[key];
+  }
+  result.length = typeof raw.length === 'number' ? clampLength(raw.length) : null;
+  if (!Object.hasOwn(KIND_LABELS, result.kind as string)) result.kind = 'chars';
+  return result as unknown as Collection;
+}
+
 export function defaultCollections(): Collection[] {
   return [
     makeCollection({ lower: false, digits: false }),
@@ -110,46 +123,61 @@ export function shortLabel(c: Collection): string {
   return l.length > 10 ? l.slice(0, 9) + '…' : l;
 }
 
-/** Returns a problem description if the collection can't produce values */
-export function validate(c: Collection): string | null {
-  switch (c.kind) {
-    case 'chars':
-      return buildCharset(c, 1).pool.length ? null : 'No characters to pick from';
-    case 'number':
-      if (!Number.isSafeInteger(c.min) || !Number.isSafeInteger(c.max)) return 'Min and max must be whole numbers';
-      if (c.min > c.max) return 'Min must not be greater than max';
-      if (c.max - c.min + 1 > MAX_NUMBER) return 'Range is too large';
-      return null;
-    default:
-      return null;
-  }
+/** Everything needed to produce values for a collection, built once per rule change */
+export interface Prepared {
+  /** Why the collection can't produce values, if it can't */
+  problem: string | null;
+  bits: number;
+  /** Number of distinct characters, for character based kinds */
+  poolSize: number | null;
+  next: () => string;
 }
 
-export function generate(c: Collection, globalLength: number): string {
+const broken = (problem: string): Prepared => ({ problem, bits: 0, poolSize: null, next: () => '' });
+
+export function prepare(c: Collection, globalLength: number): Prepared {
   const length = effectiveLength(c, globalLength);
   switch (c.kind) {
     case 'uuid':
-      return crypto.randomUUID();
-    case 'hex':
-      return generateFromCharset({ pool: [...HEX_CHARS], leading: [...HEX_CHARS], required: [] }, length);
-    case 'number':
-      return validate(c) ? '' : String(randomInt(c.min, c.max));
-    case 'chars':
-      return generateFromCharset(buildCharset(c, length), length);
+      return { problem: null, bits: 122, poolSize: null, next: () => crypto.randomUUID() };
+    case 'hex': {
+      const hex = [...HEX_CHARS];
+      return { problem: null, bits: length * 4, poolSize: 16, next: charsetGenerator({ pool: hex, leading: hex, required: [] }, length) };
+    }
+    case 'number': {
+      const { min, max } = c;
+      if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max)) return broken('Min and max must be whole numbers');
+      if (min > max) return broken('Min must not be greater than max');
+      if (max - min + 1 > MAX_NUMBER) return broken('Range is too large');
+      return { problem: null, bits: Math.log2(max - min + 1), poolSize: null, next: () => String(randomInt(min, max)) };
+    }
+    case 'chars': {
+      const charset = buildCharset(c, length);
+      if (typeof charset === 'string') return broken(charset);
+      return {
+        problem: null,
+        bits: charsetEntropy(charset, length),
+        poolSize: charset.pool.length,
+        next: charsetGenerator(charset, length),
+      };
+    }
   }
 }
 
-export function entropyBits(c: Collection, globalLength: number): number {
-  const length = effectiveLength(c, globalLength);
+/** Changes only when the values a collection produces would change (not on rename etc.) */
+export function generationKey(c: Collection, globalLength: number): string {
   switch (c.kind) {
     case 'uuid':
-      return 122;
-    case 'hex':
-      return length * 4;
+      return 'uuid';
     case 'number':
-      return validate(c) ? 0 : Math.log2(c.max - c.min + 1);
-    case 'chars':
-      return charsetEntropy(buildCharset(c, length), length);
+      return `number:${c.min}:${c.max}`;
+    case 'hex':
+      return `hex:${effectiveLength(c, globalLength)}`;
+    case 'chars': {
+      const { lower, upper, digits, symbols, symbolSet, extra, exclude, noLookalikes, requireEach, noLeadingSymbol } = c;
+      const rules = [lower, upper, digits, symbols, symbolSet, extra, exclude, noLookalikes, requireEach, noLeadingSymbol];
+      return `chars:${effectiveLength(c, globalLength)}:${JSON.stringify(rules)}`;
+    }
   }
 }
 

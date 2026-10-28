@@ -339,7 +339,8 @@ code {
 	border: 2px solid var(--primary);
 	font: 14px var(--monospace);
 	/* --w is the value width in characters; ch resolves against the monospace font */
-	width: clamp(240px, calc(var(--w, 20) * 1ch + 30px), calc(48ch + 30px));
+	/* +36px covers borders, list padding and value padding */
+	width: clamp(240px, calc(var(--w, 20) * 1ch + 36px), calc(48ch + 36px));
 }
 .Column-title {
 	flex: none;

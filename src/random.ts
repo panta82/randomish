@@ -86,22 +86,28 @@ export interface Charset {
   required: string[][];
 }
 
+const CLASS_NAMES: Record<CharClass, string> = {
+  lower: 'lowercase letters',
+  upper: 'uppercase letters',
+  digits: 'digits',
+  symbols: 'symbols',
+};
+
 const ALNUM = /^[\p{L}\p{N}]$/u;
 
-function chars(s: string): string[] {
-  return Array.from(s);
-}
+/** Below this share of accepted attempts, rules count as too strict to generate from */
+const MIN_ACCEPTANCE_LOG2 = -10;
 
 /**
- * Turn rules into a concrete charset for a given length. Rules that can't be honored
- * (eg. more required groups than characters) are relaxed instead of failing.
+ * Turn rules into a concrete charset for a given length.
+ * Returns a problem instead, if the rules can't be honored.
  */
-export function buildCharset(rules: CharRules, length: number): Charset {
-  const excluded = new Set(chars(rules.exclude + (rules.noLookalikes ? LOOKALIKES : '')));
+export function buildCharset(rules: CharRules, length: number): Charset | string {
+  const excluded = new Set(Array.from(rules.exclude + (rules.noLookalikes ? LOOKALIKES : '')));
   const seen = new Set<string>();
   const take = (source: string) => {
     const result: string[] = [];
-    for (const c of chars(source)) {
+    for (const c of source) {
       if (!excluded.has(c) && !seen.has(c) && c.trim() !== '') {
         seen.add(c);
         result.push(c);
@@ -114,66 +120,63 @@ export function buildCharset(rules: CharRules, length: number): Charset {
   for (const cls of CHAR_CLASSES) {
     if (!rules[cls]) continue;
     const group = take(cls === 'symbols' ? rules.symbolSet : CLASS_CHARS[cls]);
-    if (group.length) groups.push(group);
+    if (!group.length) return `No ${CLASS_NAMES[cls]} left after exclusions`;
+    groups.push(group);
   }
-  const extra = take(rules.extra);
-  const pool = [...groups.flat(), ...extra];
+  const pool = [...groups.flat(), ...take(rules.extra)];
+  if (!pool.length) return 'No characters to pick from';
 
-  let leading = pool;
-  if (rules.noLeadingSymbol) {
-    const alnum = pool.filter((c) => ALNUM.test(c));
-    if (alnum.length) leading = alnum;
-  }
+  const leading = rules.noLeadingSymbol ? pool.filter((c) => ALNUM.test(c)) : pool;
+  if (!leading.length) return 'Only symbols left, so nothing can go first';
 
-  let required: string[][] = [];
-  if (rules.requireEach && groups.length > 1 && groups.length <= length) {
-    required = groups;
-  }
+  const required = rules.requireEach ? groups : [];
+  if (required.length > length) return `Length must be at least ${required.length} to fit one of each class`;
 
-  return { pool, leading, required };
-}
-
-const MAX_ATTEMPTS = 100_000;
-
-/**
- * Uniformly random string over all strings of `length` that satisfy the charset.
- * First char is drawn from `leading`, then we reject until all required groups are present,
- * which keeps the distribution uniform over valid strings.
- */
-export function generateFromCharset(charset: Charset, length: number): string {
-  const { pool, leading, required } = charset;
-  if (!pool.length || length < 1) return '';
-
-  const requiredSets = required.map((g) => new Set(g));
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const out = new Array<string>(length);
-    out[0] = pick(leading);
-    for (let i = 1; i < length; i++) out[i] = pick(pool);
-    if (requiredSets.every((set) => out.some((c) => set.has(c)))) {
-      return out.join('');
+  const charset = { pool, leading, required };
+  if (required.length) {
+    const unconstrained = Math.log2(leading.length) + (length - 1) * Math.log2(pool.length);
+    if (charsetEntropy(charset, length) - unconstrained < MIN_ACCEPTANCE_LOG2) {
+      return 'Rules are too strict for this length';
     }
   }
-  throw new Error('Could not satisfy character rules');
+  return charset;
 }
 
 /**
- * Exact entropy (log2 of the number of possible outputs) of generateFromCharset,
+ * Returns a function producing uniformly random strings over all strings of `length`
+ * that satisfy the charset. First char is drawn from `leading`, then we reject until
+ * all required groups are present, which keeps the distribution uniform over valid strings.
+ */
+export function charsetGenerator(charset: Charset, length: number): () => string {
+  const { pool, leading } = charset;
+  const required = charset.required.map((g) => new Set(g));
+  const out = new Array<string>(length);
+  return () => {
+    // buildCharset guarantees a reasonable acceptance rate, so this terminates quickly
+    for (;;) {
+      out[0] = pick(leading);
+      for (let i = 1; i < length; i++) out[i] = pick(pool);
+      if (required.every((set) => out.some((c) => set.has(c)))) return out.join('');
+    }
+  };
+}
+
+/**
+ * Exact entropy (log2 of the number of possible outputs) of charsetGenerator,
  * counted using inclusion-exclusion over required groups.
  */
 export function charsetEntropy(charset: Charset, length: number): number {
   const { pool, leading, required } = charset;
-  if (!pool.length || length < 1) return 0;
+  if (length < 1) return 0;
 
   const leadingSet = new Set(leading);
-  const n = pool.length;
-  const l = leading.length;
   const sizes = required.map((g) => g.length);
   const leadingSizes = required.map((g) => g.filter((c) => leadingSet.has(c)).length);
 
   let total = 0n;
   for (let mask = 0; mask < 1 << required.length; mask++) {
-    let without = n;
-    let leadingWithout = l;
+    let without = pool.length;
+    let leadingWithout = leading.length;
     let sign = 1n;
     for (let i = 0; i < required.length; i++) {
       if (mask & (1 << i)) {
