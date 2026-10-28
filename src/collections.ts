@@ -35,10 +35,6 @@ export const PRESETS: { label: string; rules: CharRules }[] = [
   { label: 'PIN', rules: { ...ALPHANUMERIC, ...ONLY_CUSTOM, customChars: '0-9' } },
 ];
 
-export function matchesPreset(c: CharRules, rules: CharRules): boolean {
-  return (Object.keys(rules) as (keyof CharRules)[]).every((key) => c[key] === rules[key]);
-}
-
 export function newId(): string {
   return crypto.randomUUID().slice(0, 8);
 }

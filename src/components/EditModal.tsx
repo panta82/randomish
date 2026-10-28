@@ -5,7 +5,6 @@ import {
   Collection,
   effectiveLength,
   generationKey,
-  matchesPreset,
   MAX_LENGTH,
   MIN_LENGTH,
   prepare,
@@ -82,25 +81,22 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
           </button>
         </header>
 
-        <div class="Form">
-          <label class="Form-key" for="name">Name</label>
-          <input id="name" class="Input" placeholder={autoLabel(draft)} value={draft.name} onInput={(e) => setDraft('name', e.currentTarget.value)} />
-
+        <div class="Form Modal-band Modal-presets">
           <span class="Form-key">Presets</span>
           <div class="Form-row">
             <For each={PRESETS}>
               {(preset) => (
-                <button
-                  type="button"
-                  class="Button"
-                  classList={{ 'Button-on': matchesPreset(draft, preset.rules) }}
-                  onClick={() => setDraft(preset.rules)}
-                >
+                <button type="button" class="Button" onClick={() => setDraft(preset.rules)}>
                   {preset.label}
                 </button>
               )}
             </For>
           </div>
+        </div>
+
+        <div class="Form">
+          <label class="Form-key" for="name">Name</label>
+          <input id="name" class="Input" placeholder={autoLabel(draft)} value={draft.name} onInput={(e) => setDraft('name', e.currentTarget.value)} />
 
           <span class="Form-key">Classes</span>
           <div class="Form-row">
@@ -151,7 +147,9 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
               onInput={(e) => e.currentTarget.value !== '' && setDraft('length', effectiveLength({ ...draft, length: Number(e.currentTarget.value) }, 0))}
             />
           </div>
+        </div>
 
+        <div class="Form Modal-band">
           <Show when={!props.isNew}>
             <span class="Form-key">Position</span>
             <div class="Form-row">

@@ -8,6 +8,7 @@
 	--active: #bf320f;
 	--faded: rgba(255, 255, 255, 0.5);
 	--subtle: rgba(255, 255, 255, 0.2);
+	--panel: #3a4546;
 
 	--sans: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
 	--monospace: 'Droid Sans Mono', 'DejaVu Sans Mono', 'Lucida Console', Monaco, ui-monospace, monospace;
@@ -79,7 +80,6 @@ code {
 	font-size: 16px;
 	font-weight: bold;
 	min-width: 28px;
-	transition: all 0.2s;
 	cursor: pointer;
 }
 .Button:not(:disabled):hover {
@@ -129,7 +129,6 @@ code {
 	font-weight: bold;
 	line-height: 1;
 	cursor: pointer;
-	transition: all 0.2s;
 }
 .IconButton:not(:disabled):hover {
 	background: var(--highlight);
@@ -208,7 +207,6 @@ code {
 }
 .Dice-body {
 	fill: var(--background);
-	transition: fill 0.2s;
 }
 .Dice:hover .Dice-body {
 	fill: var(--highlight);
@@ -301,7 +299,6 @@ code {
 	border-radius: 50%;
 	border: 3px solid var(--background);
 	background: var(--primary);
-	transition: all 0.2s;
 }
 .LengthBar-slider::-moz-range-thumb {
 	width: 16px;
@@ -309,7 +306,6 @@ code {
 	border-radius: 50%;
 	border: 3px solid var(--background);
 	background: var(--primary);
-	transition: all 0.2s;
 }
 .LengthBar-slider:hover::-webkit-slider-thumb {
 	border-color: var(--highlight);
@@ -433,7 +429,6 @@ button.Column-name:hover {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	cursor: pointer;
-	transition: background-color 0.2s;
 }
 .Value:hover,
 .Value:focus-visible {
@@ -455,7 +450,6 @@ button.Column-name:hover {
 	color: var(--primary);
 	font-weight: bold;
 	cursor: pointer;
-	transition: all 0.2s;
 }
 .AddRail:hover {
 	border-style: solid;
@@ -498,7 +492,6 @@ button.Column-name:hover {
 	font: inherit;
 	text-align: left;
 	cursor: pointer;
-	transition: background-color 0.2s;
 }
 .History-entry:hover,
 .History-entry:focus-visible {
@@ -554,6 +547,29 @@ button.Column-name:hover {
 	gap: 14px 12px;
 	align-items: center;
 	padding: 18px 20px;
+}
+/* Gray bands above and below the main form */
+.Modal-band {
+	background: var(--panel);
+}
+.Modal-band .Preview {
+	background: var(--background);
+}
+.Modal-presets {
+	position: relative;
+	padding-top: 14px;
+	padding-bottom: 14px;
+}
+/* Arrow pointing from the presets down to the fields they fill */
+.Modal-presets::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	bottom: -10px;
+	transform: translateX(-50%);
+	border-style: solid;
+	border-width: 10px 14px 0;
+	border-color: var(--panel) transparent transparent;
 }
 .Form-key {
 	color: var(--faded);
@@ -657,7 +673,6 @@ button.Column-name:hover {
 	flex-wrap: wrap;
 	gap: 8px;
 	padding: 12px 20px;
-	border-top: 2px solid rgba(255, 255, 255, 0.15);
 }
 
 /* Toasts */

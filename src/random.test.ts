@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { autoLabel, Collection, generationKey, makeCollection, matchesPreset, normalizeCollection, prepare, PRESETS } from './collections';
+import { autoLabel, Collection, generationKey, makeCollection, normalizeCollection, prepare, PRESETS } from './collections';
 import {
   buildCharset,
   Charset,
@@ -166,8 +166,6 @@ describe('collections', () => {
     expect(next(preset('Hex'), 32)).toMatch(/^[0-9a-f]{32}$/);
     expect(next(preset('PIN'), 6)).toMatch(/^[0-9]{6}$/);
     expect(next(preset('Uppercase'))).toMatch(/^[A-Z]{12}$/);
-    expect(matchesPreset(makeCollection(preset('Hex')), preset('Hex'))).toBe(true);
-    expect(matchesPreset(makeCollection(), preset('Hex'))).toBe(false);
   });
 
   it('labels and reports problems', () => {
