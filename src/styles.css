@@ -356,7 +356,9 @@ code {
 /* Column */
 
 .Column {
-	flex: none;
+	/* Shrink down to min-width before the strip starts scrolling */
+	flex: 0 1 auto;
+	min-width: 200px;
 	display: flex;
 	flex-direction: column;
 	min-height: 0;
@@ -467,6 +469,7 @@ button.Column-name:hover {
 /* History */
 
 .History {
+	flex: none;
 	width: 340px;
 }
 .History-name {
@@ -807,6 +810,7 @@ button.Column-name:hover {
 	}
 	.Column,
 	.History {
+		flex: none;
 		width: 100%;
 		scroll-snap-align: start;
 	}
