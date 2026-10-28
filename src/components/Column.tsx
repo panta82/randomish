@@ -21,7 +21,7 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
   const [rows, setRows] = createSignal(0);
   const [values, setValues] = createSignal<string[]>([]);
 
-  // Only rebuild the generator when the values it produces would change
+  // Rebuild the generator only when generation rules change
   const key = createMemo(() => generationKey(collection(), state.length));
   const prepared = createMemo(() => {
     key();
@@ -33,7 +33,7 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
 
   createEffect(on([prepared, rollEpoch], regenerate, { defer: true }));
 
-  // Growing the window adds rows, shrinking keeps the existing values around
+  // Add rows as the window grows; keep values when it shrinks
   createEffect(
     on(rows, (count) => {
       const missing = count - untrack(values).length;
@@ -58,7 +58,7 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
     try {
       if (!(await copy(value))) return;
       addToHistory(value, collection());
-      // Values may have been regenerated while we waited
+      // The values may have changed while copying
       setValues((v) => v.map((old, i) => (i === index && old === value ? prepared().next() : old)));
     } finally {
       copying = false;
@@ -76,8 +76,8 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
             {formatBits(prepared().bits)}
           </span>
         </Show>
-        <button class="IconButton" title="Generate new values" onClick={regenerate}>
-          <Icon name="refresh" />
+        <button class="IconButton" title="Edit rules" onClick={props.onEdit}>
+          <Icon name="more" />
         </button>
       </header>
       <div class="Column-list" ref={list}>

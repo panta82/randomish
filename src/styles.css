@@ -58,7 +58,7 @@ code {
 	flex: 1;
 }
 
-/* App: fills the viewport, the board takes whatever height is left */
+/* App fills the viewport; the board uses the remaining height */
 
 .App {
 	height: 100vh;
@@ -113,7 +113,7 @@ code {
 	color: var(--foreground);
 }
 
-/* Small square button, sits on the mint title bars */
+/* Square button for title bars */
 .IconButton {
 	flex: none;
 	width: 26px;
@@ -142,6 +142,17 @@ code {
 .IconButton:disabled {
 	opacity: 0.4;
 	cursor: default;
+}
+.IconButton.IconButton-confirm:not(:disabled) {
+	background: var(--highlight);
+	border-color: var(--highlight);
+	color: var(--foreground);
+	animation: IconButton-pulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes IconButton-pulse {
+	to {
+		transform: scale(1.12);
+	}
 }
 .IconButton.IconButton-light {
 	border-color: var(--primary);
@@ -175,9 +186,9 @@ code {
 
 .Dice {
 	position: absolute;
-	top: 5px;
-	left: 10px;
-	width: 75px;
+	top: 6px;
+	left: 12px;
+	width: 70px;
 	padding: 0;
 	border: none;
 	background: none;
@@ -187,12 +198,17 @@ code {
 	display: block;
 	width: 100%;
 	height: auto;
+	/* Keep the outline visible over dark lines */
+	filter: drop-shadow(0 0 1px var(--primary)) drop-shadow(0 0 3px var(--primary));
 }
-.Dice svg path {
+.Dice-hull {
+	fill: var(--primary);
+}
+.Dice-body {
 	fill: var(--background);
 	transition: fill 0.2s;
 }
-.Dice:hover svg path {
+.Dice:hover .Dice-body {
 	fill: var(--highlight);
 }
 .Dice:active {
@@ -205,7 +221,7 @@ code {
 .Dice.Dice-rolling svg {
 	animation: Dice-scale 1.5s ease-out 1;
 }
-.Dice.Dice-rolling svg path {
+.Dice.Dice-rolling .Dice-body {
 	fill: var(--highlight);
 }
 @keyframes Dice-spin {
@@ -222,7 +238,7 @@ code {
 	}
 }
 
-/* Length bar, inside the header */
+/* Length bar */
 
 .LengthBar {
 	flex: 1;
@@ -253,8 +269,8 @@ code {
 	border-color: var(--highlight);
 }
 .LengthBar-edge {
-	font-size: 13px;
-	opacity: 0.6;
+	font-size: 14px;
+	font-weight: bold;
 }
 .LengthBar-slider {
 	flex: 1;
@@ -305,9 +321,10 @@ code {
 .About {
 	position: fixed;
 	right: 22px;
-	bottom: 3px;
-	font-size: 11px;
-	color: var(--faded);
+	bottom: 1px;
+	font-size: 13px;
+	font-weight: bold;
+	color: var(--primary);
 	text-decoration: none;
 }
 .About:hover {
@@ -315,7 +332,7 @@ code {
 	text-decoration: underline;
 }
 
-/* Board: collection strip (scrolls sideways) + pinned history */
+/* Board: scrollable collections and pinned history */
 
 .Board {
 	flex: 1;
@@ -347,8 +364,8 @@ code {
 	min-height: 0;
 	border: 2px solid var(--primary);
 	font: 14px var(--monospace);
-	/* --w is the value width in characters; ch resolves against the monospace font */
-	/* +36px covers borders, list padding and value padding */
+	/* --w is the value width in monospace characters */
+	/* +36px accounts for borders and padding */
 	width: clamp(240px, calc(var(--w, 20) * 1ch + 36px), calc(48ch + 36px));
 }
 .Column-title {
@@ -369,7 +386,7 @@ code {
 	background: none;
 	color: inherit;
 	text-align: left;
-	font: 17px var(--monospace);
+	font: bold 17px var(--monospace);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -422,7 +439,7 @@ button.Column-name:hover {
 	outline: none;
 }
 
-/* Thin, full-height "add" rail at the end of the strip */
+/* Add rail at the end of the strip */
 .AddRail {
 	flex: none;
 	width: 46px;
@@ -496,17 +513,6 @@ button.Column-name:hover {
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
-.History-tag {
-	flex: none;
-	max-width: 80px;
-	overflow: hidden;
-	padding: 0 3px;
-	border: 1px solid rgba(255, 255, 255, 0.3);
-	border-radius: 3px;
-	color: var(--faded);
-	font: 10px/14px var(--monospace);
-	white-space: nowrap;
-}
 .History-time {
 	flex: none;
 	min-width: 52px;
@@ -523,7 +529,7 @@ button.Column-name:hover {
 /* Modal */
 
 .Modal {
-	/* Pinned near the top, so the dialog doesn't jump around as fields appear */
+	/* Keep the dialog stable as fields appear */
 	margin: max(10px, 8vh) auto auto;
 	width: min(640px, calc(100vw - 20px));
 	max-height: calc(100dvh - 20px);
@@ -690,7 +696,7 @@ button.Column-name:hover {
 	}
 }
 
-/* Mobile: one column per screen, swipe between them */
+/* Mobile: swipe between full-width columns */
 
 @media (max-width: 700px) {
 	.Header {

@@ -1,6 +1,6 @@
 import { createEffect, createRoot, createSignal } from 'solid-js';
 import { createStore, produce, reconcile } from 'solid-js/store';
-import { clampLength, Collection, defaultCollections, normalizeCollection, shortLabel } from './collections';
+import { clampLength, Collection, defaultCollections, normalizeCollection } from './collections';
 
 const STORAGE_KEY = 'randomish:v2';
 export const HISTORY_LIMIT = 100;
@@ -8,7 +8,6 @@ export const HISTORY_LIMIT = 100;
 export interface HistoryEntry {
   value: string;
   timestamp: number;
-  tag: string;
 }
 
 export interface AppState {
@@ -24,10 +23,10 @@ function defaultState(): AppState {
 
 function isHistoryEntry(entry: unknown): entry is HistoryEntry {
   const e = entry as HistoryEntry;
-  return typeof e?.value === 'string' && Number.isFinite(e.timestamp) && typeof e.tag === 'string';
+  return typeof e?.value === 'string' && Number.isFinite(e.timestamp);
 }
 
-/** Parse stored state, trusting nothing about its shape */
+/** Validate stored state before using it */
 function parse(raw: string | null): AppState {
   const fallback = defaultState();
   if (!raw) return fallback;
@@ -65,7 +64,7 @@ export function setLength(length: number) {
   setState('length', clampLength(length));
 }
 
-/** Insert or update a collection, optionally moving it to a new position */
+/** Save a collection, optionally at a new position */
 export function saveCollection(collection: Collection, position?: number) {
   setState(
     'collections',
@@ -84,11 +83,11 @@ export function deleteCollection(id: string) {
 
 export function addToHistory(value: string, collection: Collection) {
   if (collection.skipHistory) return;
-  const entry: HistoryEntry = { value, timestamp: Date.now(), tag: shortLabel(collection) };
+  const entry: HistoryEntry = { value, timestamp: Date.now() };
   setState('history', (history) => [entry, ...history.filter((h) => h.value !== value)].slice(0, HISTORY_LIMIT));
 }
 
-/** Move an existing entry back to the top, as it was just used again */
+/** Move a reused entry to the top */
 export function touchHistory(value: string) {
   setState('history', (history) => {
     const entry = history.find((h) => h.value === value);
@@ -104,7 +103,7 @@ export function clearHistory() {
 // ---------------------------------------------------------------------------
 // Ephemeral UI state
 
-/** Bumped by the dice, makes every column regenerate */
+/** Changing this value regenerates every column */
 export const [rollEpoch, setRollEpoch] = createSignal(0);
 
 export interface Toast {
@@ -124,7 +123,7 @@ export function toast(message: string) {
   setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), 2400);
 }
 
-/** Copy to clipboard and report whether it worked */
+/** Copy a value and report success */
 export async function copy(value: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(value);
@@ -154,7 +153,7 @@ createRoot(() => {
   });
 });
 
-// Keep multiple open tabs in sync
+// Sync state across open tabs
 window.addEventListener('storage', (e) => {
   if (e.key === STORAGE_KEY) setState(reconcile(parse(e.newValue)));
 });

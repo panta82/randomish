@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal, For, onCleanup, Show } from 'solid-js';
 import { Icon } from './Icon';
 import { clearHistory, copy, state, toast, touchHistory } from '../store';
 
@@ -30,7 +30,17 @@ export function History() {
     if (await copy(value)) touchHistory(value);
   };
 
+  const [confirming, setConfirming] = createSignal(false);
+  let resetTimer: ReturnType<typeof setTimeout> | undefined;
+  onCleanup(() => clearTimeout(resetTimer));
   const clear = () => {
+    clearTimeout(resetTimer);
+    if (!confirming()) {
+      setConfirming(true);
+      resetTimer = setTimeout(() => setConfirming(false), 3000);
+      return;
+    }
+    setConfirming(false);
     clearHistory();
     toast('History cleared');
   };
@@ -39,17 +49,22 @@ export function History() {
     <section class="Column History">
       <header class="Column-title">
         <span class="Column-name History-name">History</span>
-        <button class="IconButton" title="Clear history" disabled={!state.history.length} onClick={clear}>
+        <button
+          class="IconButton"
+          classList={{ 'IconButton-confirm': confirming() }}
+          title={confirming() ? 'Click again to confirm' : 'Clear history'}
+          disabled={!state.history.length}
+          onClick={clear}
+        >
           <Icon name="trash" />
         </button>
       </header>
       <div class="Column-list History-list">
-        <Show when={state.history.length} fallback={<div class="History-empty">Click a value to copy it. Copied values are kept here, on this device, until you clear them.</div>}>
+        <Show when={state.history.length} fallback={<div class="History-empty">Click a value to copy it. Copies stay on this device until you clear them.</div>}>
           <For each={state.history}>
             {(entry) => (
               <button class="History-entry" title={entry.value} onClick={() => use(entry.value)}>
                 <span class="History-value">{entry.value}</span>
-                <span class="History-tag">{entry.tag}</span>
                 <time class="History-time" dateTime={new Date(entry.timestamp).toISOString()}>
                   {ago(entry.timestamp, now())}
                 </time>

@@ -23,10 +23,10 @@ export const KIND_LABELS: Record<CollectionKind, string> = {
 
 export interface Collection extends CharRules {
   id: string;
-  /** Custom title. Empty means auto-generated from rules */
+  /** Empty names are generated from the rules */
   name: string;
   kind: CollectionKind;
-  /** Fixed length. null means follow the global length */
+  /** Null uses the global length */
   length: number | null;
   min: number;
   max: number;
@@ -60,7 +60,7 @@ export function makeCollection(overrides: Partial<Collection> = {}): Collection 
   };
 }
 
-/** Turn untrusted stored data into a valid collection, or null if it's not salvageable */
+/** Normalize stored data, or return null if it isn't an object */
 export function normalizeCollection(data: unknown): Collection | null {
   if (!data || typeof data !== 'object') return null;
   const raw = data as Record<string, unknown>;
@@ -81,7 +81,7 @@ export function defaultCollections(): Collection[] {
   ];
 }
 
-/** Whether the global/fixed length setting applies to this kind */
+/** Whether this kind uses a length setting */
 export function usesLength(c: Collection): boolean {
   return c.kind === 'chars' || c.kind === 'hex';
 }
@@ -117,18 +117,12 @@ export function label(c: Collection): string {
   return c.name.trim() || autoLabel(c);
 }
 
-/** Short version of the label, for history tags */
-export function shortLabel(c: Collection): string {
-  const l = label(c);
-  return l.length > 10 ? l.slice(0, 9) + '…' : l;
-}
-
-/** Everything needed to produce values for a collection, built once per rule change */
+/** Generator and metadata for a collection */
 export interface Prepared {
-  /** Why the collection can't produce values, if it can't */
+  /** Error preventing value generation, if any */
   problem: string | null;
   bits: number;
-  /** Number of distinct characters, for character based kinds */
+  /** Number of distinct characters, for character-based kinds */
   poolSize: number | null;
   next: () => string;
 }
@@ -147,7 +141,7 @@ export function prepare(c: Collection, globalLength: number): Prepared {
     case 'number': {
       const { min, max } = c;
       if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max)) return broken('Min and max must be whole numbers');
-      if (min > max) return broken('Min must not be greater than max');
+      if (min > max) return broken("Min can't be greater than max");
       if (max - min + 1 > MAX_NUMBER) return broken('Range is too large');
       return { problem: null, bits: Math.log2(max - min + 1), poolSize: null, next: () => String(randomInt(min, max)) };
     }
@@ -164,7 +158,7 @@ export function prepare(c: Collection, globalLength: number): Prepared {
   }
 }
 
-/** Changes only when the values a collection produces would change (not on rename etc.) */
+/** Key over the rules that affect generated values, so renames don't regenerate */
 export function generationKey(c: Collection, globalLength: number): string {
   switch (c.kind) {
     case 'uuid':
@@ -181,7 +175,7 @@ export function generationKey(c: Collection, globalLength: number): string {
   }
 }
 
-/** Approximate rendered width of a value, in characters */
+/** Approximate value width in characters */
 export function displayWidth(c: Collection, globalLength: number): number {
   switch (c.kind) {
     case 'uuid':
