@@ -9,8 +9,6 @@ Live at https://rand.pantas.net/
 - Every value comes from `crypto.getRandomValues`, with rejection sampling so there is no modulo bias. Column headers show the entropy in bits, rounded down.
 - No server. Collections, settings and the history of copied values are kept in your browser's `localStorage` until you clear them. A collection can opt out of history.
 
-The original 2019 ClojureScript version lives on at [panta82/randomish-old](https://github.com/panta82/randomish-old).
-
 ## Development
 
 Built with [Solid](https://www.solidjs.com/) + [Vite](https://vite.dev/) + TypeScript.
