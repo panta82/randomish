@@ -1,7 +1,7 @@
 // Inline icons avoid relying on emoji fonts
 
 const PATHS = {
-  more: 'M5 12h.01M12 12h.01M19 12h.01',
+  menu: 'M4 6h16M4 12h16M4 18h16',
   refresh: 'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
   trash: 'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6',
   close: 'M6 6l12 12M18 6L6 18',

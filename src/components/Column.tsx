@@ -77,7 +77,7 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
           </span>
         </Show>
         <button class="IconButton" title="Edit rules" onClick={props.onEdit}>
-          <Icon name="more" />
+          <Icon name="menu" />
         </button>
       </header>
       <div class="Column-list" ref={list}>

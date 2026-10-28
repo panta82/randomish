@@ -186,9 +186,9 @@ code {
 
 .Dice {
 	position: absolute;
-	top: 6px;
-	left: 12px;
-	width: 70px;
+	top: 3px;
+	left: 9px;
+	width: 76px;
 	padding: 0;
 	border: none;
 	background: none;
@@ -198,11 +198,13 @@ code {
 	display: block;
 	width: 100%;
 	height: auto;
-	/* Keep the outline visible over dark lines */
-	filter: drop-shadow(0 0 1px var(--primary)) drop-shadow(0 0 3px var(--primary));
 }
+/* The hull fills the pips and draws a solid outline, so lines behind the dice don't show through */
 .Dice-hull {
 	fill: var(--primary);
+	stroke: var(--primary);
+	stroke-width: 9;
+	stroke-linejoin: round;
 }
 .Dice-body {
 	fill: var(--background);
