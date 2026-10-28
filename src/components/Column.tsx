@@ -68,9 +68,9 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
   return (
     <section class="Column" style={{ '--w': effectiveLength(collection(), state.length) }}>
       <header class="Column-title">
-        <button class="Column-name" title="Edit rules" onClick={props.onEdit}>
+        <span class="Column-name" title={label(collection())}>
           {label(collection())}
-        </button>
+        </span>
         <Show when={!prepared().problem}>
           <span class="Column-bits" title={bitsTitle(prepared().bits, prepared().poolSize)}>
             {formatBits(prepared().bits)}
