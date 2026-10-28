@@ -64,14 +64,20 @@ export function setLength(length: number) {
   setState('length', clampLength(length));
 }
 
-/** Save a collection, optionally at a new position */
-export function saveCollection(collection: Collection, position?: number) {
+/** Update a collection in place, or add it at the end */
+export function saveCollection(collection: Collection) {
+  const index = state.collections.findIndex((c) => c.id === collection.id);
+  if (index >= 0) setState('collections', index, reconcile(collection));
+  else setState('collections', state.collections.length, collection);
+}
+
+export function moveCollection(id: string, to: number) {
   setState(
     'collections',
     produce((list) => {
-      const index = list.findIndex((c) => c.id === collection.id);
-      if (index >= 0) list.splice(index, 1);
-      list.splice(position ?? (index >= 0 ? index : list.length), 0, collection);
+      const from = list.findIndex((c) => c.id === id);
+      if (from < 0 || to < 0 || to >= list.length || from === to) return;
+      list.splice(to, 0, ...list.splice(from, 1));
     }),
   );
 }

@@ -13,35 +13,21 @@ function nextUint32(): number {
 }
 
 const TWO_32 = 2 ** 32;
-const TWO_53 = 2 ** 53;
 
 /**
- * Uniform integer in [0, n), for 1 <= n <= 2^53.
+ * Uniform integer in [0, n), for 1 <= n <= 2^32.
  * Uses rejection sampling, so there is no modulo bias.
  */
 export function randomBelow(n: number): number {
-  if (!Number.isInteger(n) || n < 1 || n > TWO_53) {
+  if (!Number.isInteger(n) || n < 1 || n > TWO_32) {
     throw new RangeError(`randomBelow: invalid range ${n}`);
   }
-  if (n <= TWO_32) {
-    const limit = TWO_32 - (TWO_32 % n);
-    let x: number;
-    do {
-      x = nextUint32();
-    } while (x >= limit);
-    return x % n;
-  }
-  const limit = TWO_53 - (TWO_53 % n);
+  const limit = TWO_32 - (TWO_32 % n);
   let x: number;
   do {
-    x = (nextUint32() & 0x1fffff) * TWO_32 + nextUint32();
+    x = nextUint32();
   } while (x >= limit);
   return x % n;
-}
-
-/** Uniform integer in [min, max], both inclusive */
-export function randomInt(min: number, max: number): number {
-  return min + randomBelow(max - min + 1);
 }
 
 export function pick<T>(items: readonly T[]): T {
@@ -59,18 +45,17 @@ export const CLASS_CHARS = {
 
 export const DEFAULT_SYMBOLS = '!@#$%^&*';
 export const LOOKALIKES = 'Il1O0o';
-export const HEX_CHARS = '0123456789abcdef';
 
-export type CharClass = 'lower' | 'upper' | 'digits' | 'symbols';
-export const CHAR_CLASSES: readonly CharClass[] = ['lower', 'upper', 'digits', 'symbols'];
+export type CharClass = 'lower' | 'upper' | 'digits' | 'custom';
+export const CHAR_CLASSES: readonly CharClass[] = ['lower', 'upper', 'digits', 'custom'];
 
 export interface CharRules {
   lower: boolean;
   upper: boolean;
   digits: boolean;
-  symbols: boolean;
-  symbolSet: string;
-  extra: string;
+  custom: boolean;
+  /** Characters and ranges, eg. "a-f!@#" */
+  customChars: string;
   exclude: string;
   noLookalikes: boolean;
   requireEach: boolean;
@@ -90,13 +75,33 @@ const CLASS_NAMES: Record<CharClass, string> = {
   lower: 'lowercase letters',
   upper: 'uppercase letters',
   digits: 'digits',
-  symbols: 'symbols',
+  custom: 'custom characters',
 };
 
 const ALNUM = /^[\p{L}\p{N}]$/u;
 
 /** Below this share of accepted attempts, rules count as too strict to generate from */
 const MIN_ACCEPTANCE_LOG2 = -10;
+
+/** Longer ranges are taken literally, so a typo can't produce a huge pool */
+const MAX_RANGE = 1000;
+
+/** Expand "a-f" style ranges into characters. A "-" at either end is literal. */
+export function expandRanges(spec: string): string[] {
+  const chars = Array.from(spec);
+  const result: string[] = [];
+  for (let i = 0; i < chars.length; i++) {
+    const from = chars[i].codePointAt(0)!;
+    const to = chars[i + 2]?.codePointAt(0);
+    if (chars[i + 1] === '-' && to !== undefined && from <= to && to - from < MAX_RANGE) {
+      for (let code = from; code <= to; code++) result.push(String.fromCodePoint(code));
+      i += 2;
+    } else {
+      result.push(chars[i]);
+    }
+  }
+  return result;
+}
 
 /**
  * Turn rules into a concrete charset for a given length.
@@ -105,7 +110,7 @@ const MIN_ACCEPTANCE_LOG2 = -10;
 export function buildCharset(rules: CharRules, length: number): Charset | string {
   const excluded = new Set(Array.from(rules.exclude + (rules.noLookalikes ? LOOKALIKES : '')));
   const seen = new Set<string>();
-  const take = (source: string) => {
+  const take = (source: Iterable<string>) => {
     const result: string[] = [];
     for (const c of source) {
       if (!excluded.has(c) && !seen.has(c) && c.trim() !== '') {
@@ -119,11 +124,11 @@ export function buildCharset(rules: CharRules, length: number): Charset | string
   const groups: string[][] = [];
   for (const cls of CHAR_CLASSES) {
     if (!rules[cls]) continue;
-    const group = take(cls === 'symbols' ? rules.symbolSet : CLASS_CHARS[cls]);
+    const group = take(cls === 'custom' ? expandRanges(rules.customChars) : CLASS_CHARS[cls]);
     if (!group.length) return `No ${CLASS_NAMES[cls]} left after exclusions`;
     groups.push(group);
   }
-  const pool = [...groups.flat(), ...take(rules.extra)];
+  const pool = groups.flat();
   if (!pool.length) return 'No characters to pick from';
 
   const leading = rules.noLeadingSymbol ? pool.filter((c) => ALNUM.test(c)) : pool;

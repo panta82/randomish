@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack } from 'solid-js';
-import { Collection, displayWidth, generationKey, label, prepare } from '../collections';
+import { Collection, effectiveLength, generationKey, label, prepare } from '../collections';
 import { addToHistory, copy, rollEpoch, state } from '../store';
 import { Icon } from './Icon';
 
@@ -12,8 +12,8 @@ export function formatBits(bits: number): string {
   return `${n >= 10_000 ? `${(n / 1000).toFixed(1)}k` : n} ${n === 1 ? 'bit' : 'bits'}`;
 }
 
-export function bitsTitle(bits: number, poolSize: number | null): string {
-  return `${bits.toFixed(1)} bits of entropy per value` + (poolSize ? `, from ${poolSize} characters` : '');
+export function bitsTitle(bits: number, poolSize: number): string {
+  return `${bits.toFixed(1)} bits of entropy per value, from ${poolSize} characters`;
 }
 
 export function Column(props: { collection: Collection; onEdit: () => void }) {
@@ -66,7 +66,7 @@ export function Column(props: { collection: Collection; onEdit: () => void }) {
   };
 
   return (
-    <section class="Column" style={{ '--w': displayWidth(collection(), state.length) }}>
+    <section class="Column" style={{ '--w': effectiveLength(collection(), state.length) }}>
       <header class="Column-title">
         <button class="Column-name" title="Edit rules" onClick={props.onEdit}>
           {label(collection())}

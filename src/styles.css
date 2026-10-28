@@ -567,6 +567,11 @@ button.Column-name:hover {
 	align-items: center;
 	gap: 6px;
 }
+.Position {
+	min-width: 60px;
+	text-align: center;
+	font-weight: bold;
+}
 .Form-checks {
 	display: grid;
 	gap: 6px;
