@@ -583,10 +583,26 @@ button.Column-name:hover {
 	align-items: center;
 	gap: 6px;
 }
-.Position {
-	min-width: 60px;
-	text-align: center;
-	font-weight: bold;
+/* Mini map of the columns, the edited one highlighted */
+.Slots {
+	display: flex;
+	gap: 4px;
+	padding: 0 4px;
+}
+.Slot {
+	width: 12px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 2px;
+	background: var(--primary);
+	cursor: pointer;
+}
+.Slot:hover {
+	background: var(--foreground);
+}
+.Slot.Slot-current {
+	background: var(--highlight);
 }
 .Form-checks {
 	display: grid;

@@ -34,14 +34,10 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
   const resample = () => setSample(prepared().next());
   createEffect(on(prepared, resample));
 
-  // Moving happens live on the board behind the dialog, and is undone unless saved
-  const index = () => state.collections.findIndex((c) => c.id === draft.id);
-  const originalIndex = index();
-  let saved = false;
-  const onClose = () => {
-    if (!saved) moveCollection(draft.id, originalIndex);
-    props.onClose();
-  };
+  // Position is part of the draft; new collections start at the end
+  const existing = state.collections.findIndex((c) => c.id === draft.id);
+  const slots = existing >= 0 ? state.collections.length : state.collections.length + 1;
+  const [position, setPosition] = createSignal(existing >= 0 ? existing : slots - 1);
 
   let dialog!: HTMLDialogElement;
   onMount(() => dialog.showModal());
@@ -51,7 +47,7 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
     e.preventDefault();
     if (problem()) return;
     saveCollection(structuredClone(unwrap(draft)));
-    saved = true;
+    moveCollection(draft.id, position());
     toast(props.isNew ? 'Collection added' : 'Collection saved');
     close();
   };
@@ -59,7 +55,6 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
   const remove = () => {
     if (!confirmDelete()) return setConfirmDelete(true);
     deleteCollection(draft.id);
-    saved = true;
     toast('Collection deleted');
     close();
   };
@@ -72,7 +67,7 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
   );
 
   return (
-    <dialog ref={dialog} class="Modal" onClose={onClose} onClick={(e) => e.target === dialog && close()}>
+    <dialog ref={dialog} class="Modal" onClose={props.onClose} onClick={(e) => e.target === dialog && close()}>
       <form class="Modal-body" onSubmit={save}>
         <header class="Column-title">
           <span class="Column-name History-name">{props.isNew ? 'New collection' : 'Edit collection'}</span>
@@ -150,26 +145,28 @@ export function EditModal(props: { collection: Collection; isNew: boolean; onClo
         </div>
 
         <div class="Form Modal-band">
-          <Show when={!props.isNew}>
-            <span class="Form-key">Position</span>
-            <div class="Form-row">
-              <button type="button" class="Button" title="Move left" disabled={index() <= 0} onClick={() => moveCollection(draft.id, index() - 1)}>
-                <Icon name="left" size={14} />
-              </button>
-              <span class="Position">
-                {index() + 1} of {state.collections.length}
-              </span>
-              <button
-                type="button"
-                class="Button"
-                title="Move right"
-                disabled={index() >= state.collections.length - 1}
-                onClick={() => moveCollection(draft.id, index() + 1)}
-              >
-                <Icon name="right" size={14} />
-              </button>
+          <span class="Form-key">Position</span>
+          <div class="Form-row">
+            <button type="button" class="Button" title="Move left" disabled={position() <= 0} onClick={() => setPosition((p) => p - 1)}>
+              <Icon name="left" size={14} />
+            </button>
+            <div class="Slots">
+              <For each={Array.from({ length: slots }, (_, i) => i)}>
+                {(i) => (
+                  <button
+                    type="button"
+                    class="Slot"
+                    classList={{ 'Slot-current': i === position() }}
+                    title={`Position ${i + 1} of ${slots}`}
+                    onClick={() => setPosition(i)}
+                  />
+                )}
+              </For>
             </div>
-          </Show>
+            <button type="button" class="Button" title="Move right" disabled={position() >= slots - 1} onClick={() => setPosition((p) => p + 1)}>
+              <Icon name="right" size={14} />
+            </button>
+          </div>
 
           <span class="Form-key">History</span>
           <div class="Form-checks">{check('skipHistory', "Don't save copied values to history")}</div>
